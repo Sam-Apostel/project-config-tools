@@ -4,3 +4,6 @@ build
 coverage
 pnpm-lock.yaml
 docs/design/tokens.css
+# Hand-authored prose docs — not subject to code formatting.
+docs
+MANIFESTO.md
