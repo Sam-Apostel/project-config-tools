@@ -6,9 +6,11 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
   type Resource,
+  type ServerCapabilities,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { Engine } from '@apostel/visual-config-core';
+import { APP_HTML, APP_MIME, APP_RESOURCE_URI } from './app-html.js';
 
 function toolName(operationId: string): string {
   return `plan_${operationId.replace(/-/g, '_')}`;
@@ -21,10 +23,15 @@ function toolName(operationId: string): string {
  * mirroring the human Diff Sheet's plan → confirm split (spec 05).
  */
 export function createMcpServer(engine: Engine): Server {
-  const server = new Server(
-    { name: 'visual-config', version: '0.0.0' },
-    { capabilities: { tools: {}, resources: {} } },
-  );
+  // Advertise the MCP Apps extension (SEP-1865) alongside tools/resources so
+  // hosts that support interactive UIs know we ship an `text/html;profile=mcp-app`.
+  const capabilities = {
+    tools: {},
+    resources: {},
+    extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: [APP_MIME] } },
+  } as unknown as ServerCapabilities;
+
+  const server = new Server({ name: 'visual-config', version: '0.0.0' }, { capabilities });
 
   const planTools = engine.listOperations().map((op) => ({
     name: toolName(op.id),
@@ -72,6 +79,21 @@ export function createMcpServer(engine: Engine): Server {
       description: 'List applied changes (the undo history).',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     },
+    {
+      name: 'get_diagnostics',
+      description:
+        'Fact-based diagnostics for the project (currently: outdated dependencies with current→latest).',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    {
+      // MCP Apps (SEP-1865): calling this asks the host to render the interactive
+      // visual-config panel, so the user can browse and apply changes themselves.
+      name: 'open_config_ui',
+      description:
+        'Open the visual-config UI in this session so the user can browse dependencies and apply config changes themselves (each change is previewed as a diff and confirmed). Prefer this over hand-rendering a table when the user wants to drive.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      _meta: { ui: { resourceUri: APP_RESOURCE_URI, visibility: ['model', 'app'] } },
+    } as Tool,
     {
       name: 'analyze_bump',
       description:
@@ -125,12 +147,22 @@ export function createMcpServer(engine: Engine): Server {
       description: 'The compilerOptions tsconfig.json literally sets.',
       mimeType: 'application/json',
     },
+    {
+      uri: APP_RESOURCE_URI,
+      name: 'visual-config UI',
+      description: 'Interactive MCP App (SEP-1865): the visual-config panel, rendered in-session.',
+      mimeType: APP_MIME,
+    },
   ];
 
   server.setRequestHandler(ListResourcesRequestSchema, () => ({ resources }));
 
   server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const { uri } = request.params;
+    // The MCP App is HTML; every other resource is JSON project context.
+    if (uri === APP_RESOURCE_URI) {
+      return { contents: [{ uri, mimeType: APP_MIME, text: APP_HTML }] };
+    }
     const text = await readResource(uri);
     return { contents: [{ uri, mimeType: 'application/json', text }] };
   });
@@ -160,6 +192,12 @@ export function createMcpServer(engine: Engine): Server {
         return JSON.stringify(await engine.undo(String(args.entryId)), null, 2);
       case 'list_journal':
         return JSON.stringify(engine.listJournal(), null, 2);
+      case 'get_diagnostics':
+        return JSON.stringify(await engine.getDiagnostics(), null, 2);
+      case 'open_config_ui':
+        // The app itself is delivered as the linked ui:// resource; return the
+        // project model so hosts without app support still get useful context.
+        return JSON.stringify(engine.getProject(), null, 2);
       case 'analyze_bump':
         return JSON.stringify(
           await engine.analyzeBump(String(args.package), args.to ? String(args.to) : undefined),
