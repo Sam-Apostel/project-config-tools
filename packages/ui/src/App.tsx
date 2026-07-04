@@ -121,6 +121,15 @@ export function App(): JSX.Element {
     else setError(result.error ?? 'Could not plan the removal.');
   }, []);
 
+  const planUpgradeAll = useCallback(async (upgrades: Array<{ name: string; range: string }>) => {
+    const connection = rpcRef.current;
+    if (!connection || upgrades.length === 0) return;
+    setError(null);
+    const result = await connection.planOperation('upgrade-dependencies', { upgrades });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the upgrade.');
+  }, []);
+
   const runScript = useCallback(async (name: string) => {
     if (!rpcRef.current) return;
     const handle = await rpcRef.current.runScript(name);
@@ -242,6 +251,13 @@ export function App(): JSX.Element {
             outdated={outdated}
             onUpgrade={(name, latest, dev) => planInstall(name, `^${latest}`, dev)}
             onRemove={(name) => planRemoveDependency(name)}
+            onUpgradeAll={() =>
+              planUpgradeAll(
+                deps
+                  .filter((d) => outdated.has(d.name))
+                  .map((d) => ({ name: d.name, range: `^${outdated.get(d.name)!.latest}` })),
+              )
+            }
           />
         )}
         {section === 'catalog' && (
@@ -394,10 +410,21 @@ function Dependencies(props: {
   outdated: OutdatedMap;
   onUpgrade: (name: string, latest: string, dev: boolean) => void;
   onRemove: (name: string) => void;
+  onUpgradeAll: () => void;
 }): JSX.Element {
+  const outdatedCount = props.deps.filter((d) => props.outdated.has(d.name)).length;
   return (
     <>
-      <h2 className="section-title">Dependencies</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <h2 className="section-title" style={{ flex: 1 }}>
+          Dependencies
+        </h2>
+        {outdatedCount > 0 && (
+          <button className="btn primary small" onClick={props.onUpgradeAll}>
+            Upgrade all ({outdatedCount})
+          </button>
+        )}
+      </div>
       <p className="section-sub">
         Everything declared in package.json. Outdated versions are facts from the registry.
       </p>

@@ -6,6 +6,7 @@ import { installPackageOperation } from './operations/install-package.js';
 import { removeDependencyOperation } from './operations/remove-dependency.js';
 import { setTsconfigOptionOperation } from './operations/set-tsconfig-option.js';
 import { setPackageFieldOperation } from './operations/set-package-field.js';
+import { upgradeDependenciesOperation } from './operations/upgrade-dependencies.js';
 import { NodeFileSystem } from './fs.js';
 import type { CommandRunner } from './runner.js';
 import type { Registry } from './registry/npm.js';
@@ -30,6 +31,10 @@ export {
   setPackageFieldOperation,
   type SetPackageFieldInput,
 } from './operations/set-package-field.js';
+export {
+  upgradeDependenciesOperation,
+  type UpgradeDependenciesInput,
+} from './operations/upgrade-dependencies.js';
 export { Journal, type JournalEntry, type Actor } from './journal.js';
 export { NodeFileSystem, InMemoryFileSystem } from './fs.js';
 export {
@@ -71,6 +76,7 @@ export const builtinOperations: Operation<unknown>[] = [
   removeDependencyOperation as Operation<unknown>,
   setTsconfigOptionOperation as Operation<unknown>,
   setPackageFieldOperation as Operation<unknown>,
+  upgradeDependenciesOperation as Operation<unknown>,
 ];
 
 /**

@@ -91,6 +91,47 @@ describe('remove-script', () => {
   });
 });
 
+describe('upgrade-dependencies', () => {
+  it('bumps several ranges in one edit and installs once', async () => {
+    const { engine, fs, runner } = await makeEngine({
+      'package.json': pkg({
+        dependencies: { zod: '^3.20.0' },
+        devDependencies: { vitest: '^2.0.0' },
+      }),
+    });
+    const change = await engine.plan('upgrade-dependencies', {
+      upgrades: [
+        { name: 'zod', range: '^3.24.0' },
+        { name: 'vitest', range: '^2.1.8' },
+      ],
+    });
+    expect(change.edits).toHaveLength(1);
+    await engine.apply(change.id);
+    const parsed = JSON.parse(await fs.readFile('/proj/package.json'));
+    expect(parsed.dependencies.zod).toBe('^3.24.0');
+    expect(parsed.devDependencies.vitest).toBe('^2.1.8');
+    expect(runner.calls).toEqual([['npm', 'install']]);
+  });
+
+  it('notes packages it could not find, upgrades the rest', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({ dependencies: { zod: '^3' } }) });
+    const change = await engine.plan('upgrade-dependencies', {
+      upgrades: [
+        { name: 'zod', range: '^3.24.0' },
+        { name: 'ghost', range: '^1' },
+      ],
+    });
+    expect(change.notes.some((n) => n.message.includes('ghost'))).toBe(true);
+  });
+
+  it('throws when none are found', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({}) });
+    await expect(
+      engine.plan('upgrade-dependencies', { upgrades: [{ name: 'ghost', range: '^1' }] }),
+    ).rejects.toThrow();
+  });
+});
+
 describe('set-package-field', () => {
   it('sets an allowed metadata field', async () => {
     const { engine, fs } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
