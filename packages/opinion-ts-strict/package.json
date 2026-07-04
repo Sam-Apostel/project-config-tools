@@ -4,7 +4,9 @@
   "type": "module",
   "description": "Example opinion pack: recommends strict TypeScript settings. A community example, not official guidance.",
   "license": "MIT",
-  "keywords": ["visual-config-plugin"],
+  "keywords": [
+    "visual-config-plugin"
+  ],
   "visual-config": {
     "apiVersion": 1,
     "kind": "opinion"
