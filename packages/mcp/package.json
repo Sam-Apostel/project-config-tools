@@ -1,0 +1,14 @@
+{
+  "name": "@visual-config/mcp",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "MCP server projecting the operation registry as agent tools.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@visual-config/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  }
+}

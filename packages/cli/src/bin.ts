@@ -59,8 +59,12 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
   if (args.command === 'mcp') {
-    console.error('The MCP server lives in @visual-config/mcp (not yet wired into this bin).');
-    process.exit(1);
+    // stdio is the MCP protocol channel — do not write to stdout here.
+    const root = resolve(args.cwd ?? process.cwd());
+    const engine = await openProject(root);
+    const { startStdioMcpServer } = await import('@visual-config/mcp');
+    await startStdioMcpServer(engine);
+    return;
   }
 
   const root = resolve(args.cwd ?? process.cwd());

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@visual-config/core": "workspace:*",
+    "@visual-config/mcp": "workspace:*",
     "@visual-config/server": "workspace:*",
     "@visual-config/ui": "workspace:*"
   }
