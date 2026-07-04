@@ -228,11 +228,22 @@ install, always labeled with their author — see
 [`packages/opinion-ts-strict`](packages/opinion-ts-strict) for a worked example
 and [`docs/spec/07-opinions.md`](docs/spec/07-opinions.md) for the design.
 
+## Releasing
+
+Releases are driven by [Changesets](https://github.com/changesets/changesets) and
+GitHub Actions. To record a change, run `pnpm changeset` and describe it. When that
+lands on `main`, the [release workflow](.github/workflows/release.yml) opens a
+**Version Packages** PR that bumps every package (they version in lockstep) and writes
+each `CHANGELOG.md`. Merging that PR publishes all packages to npm and cuts a matching
+**GitHub Release** with the same notes.
+
+One-time setup by a maintainer: create the `@visual-config` npm org, add an
+automation `NPM_TOKEN` to the repo secrets, and `npm login`. Nothing else is manual.
+
 ## Status & contributing
 
-Early alpha. The repo pushes directly to `main` until v1 (no PR workflow yet).
-Issues and design discussion welcome. See the [roadmap](docs/ROADMAP.md) for the
-current milestone and open questions.
+Early alpha. Issues and design discussion welcome. See the [roadmap](docs/ROADMAP.md)
+for the current milestone and open questions.
 
 ## License
 

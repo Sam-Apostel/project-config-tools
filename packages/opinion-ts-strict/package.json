@@ -7,12 +7,37 @@
   "keywords": [
     "visual-config-plugin"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sam-apostel/project-config-tools.git",
+    "directory": "packages/opinion-ts-strict"
+  },
+  "homepage": "https://github.com/sam-apostel/project-config-tools#readme",
+  "bugs": "https://github.com/sam-apostel/project-config-tools/issues",
   "visual-config": {
     "apiVersion": 1,
     "kind": "opinion"
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
   },
   "dependencies": {
     "@visual-config/kit": "workspace:*"

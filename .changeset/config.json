@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "changelog": ["@changesets/changelog-github", { "repo": "sam-apostel/project-config-tools" }],
+  "commit": false,
+  "fixed": [["@visual-config/*", "visual-config"]],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}

@@ -4,12 +4,29 @@
   "type": "module",
   "description": "A visual interface for your project's config files.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sam-apostel/project-config-tools.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/sam-apostel/project-config-tools#readme",
+  "bugs": "https://github.com/sam-apostel/project-config-tools/issues",
   "mcpName": "io.github.sam-apostel/visual-config",
   "bin": {
     "visual-config": "./src/bin.ts"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "dev": "tsx watch src/bin.ts"
+    "dev": "tsx watch src/bin.ts",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "bin": {
+      "visual-config": "./dist/bin.js"
+    }
   },
   "dependencies": {
     "@visual-config/core": "workspace:*",
