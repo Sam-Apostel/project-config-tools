@@ -172,10 +172,30 @@ export class Engine {
     if (!dep) throw new Error(`"${name}" is not a dependency of this project`);
     const from = semver.minVersion(dep.range)?.version;
     if (!from) throw new Error(`Cannot resolve a base version from range "${dep.range}"`);
-    const target = to ?? (await this.npm.latestVersion(name));
-    if (!target) throw new Error(`Cannot resolve a target version for "${name}"`);
 
     const usage = await scanUsage(this.fs, this.root, name);
+
+    let target = to;
+    if (!target) {
+      try {
+        target = (await this.npm.latestVersion(name)) ?? undefined;
+      } catch {
+        /* offline — handled below */
+      }
+    }
+    if (!target) {
+      return {
+        package: name,
+        from,
+        to: from,
+        verdict: 'review',
+        reasons: [],
+        usage,
+        unknowns: [],
+        notes: ['Could not resolve the latest version (offline?). Review this bump manually.'],
+      };
+    }
+
     return analyzeBump({ pkg: name, from, to: target, changelog: this.changelog, usage });
   }
 
