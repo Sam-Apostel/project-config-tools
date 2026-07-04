@@ -36,6 +36,16 @@ export class Journal {
     return [...this.entries].reverse();
   }
 
+  /** Chronological order (for persistence). */
+  all(): JournalEntry[] {
+    return [...this.entries];
+  }
+
+  /** Replace entries (e.g. after loading from disk). */
+  load(entries: JournalEntry[]): void {
+    this.entries = [...entries];
+  }
+
   markUndone(id: string): void {
     const entry = this.get(id);
     if (entry) entry.undone = true;

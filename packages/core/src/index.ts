@@ -7,6 +7,8 @@ import { removeDependencyOperation } from './operations/remove-dependency.js';
 import { setTsconfigOptionOperation } from './operations/set-tsconfig-option.js';
 import { setPackageFieldOperation } from './operations/set-package-field.js';
 import { upgradeDependenciesOperation } from './operations/upgrade-dependencies.js';
+import { homedir } from 'node:os';
+import { join as joinPath, resolve as resolvePath } from 'node:path';
 import { NodeFileSystem } from './fs.js';
 import type { CommandRunner } from './runner.js';
 import type { Registry } from './registry/npm.js';
@@ -113,6 +115,14 @@ export interface OpenProjectOptions {
   npm?: Registry;
   /** Additional plugins, loaded after the built-ins. */
   plugins?: Plugin[];
+  /** Where to persist the undo journal. Defaults to a global cache dir (keeps the project clean). Pass null to disable. */
+  journalPath?: string | null;
+}
+
+/** A stable, project-scoped journal path in the user's cache dir (not in the project). */
+function defaultJournalPath(root: string): string {
+  const key = Buffer.from(resolvePath(root)).toString('base64url');
+  return joinPath(homedir(), '.cache', 'visual-config', `${key}.journal.json`);
 }
 
 /** Convenience: build an {@link Engine} for a project root, built-ins + plugins loaded. */
@@ -124,6 +134,8 @@ export function openProject(root: string, options: OpenProjectOptions = {}): Pro
     runner: options.runner,
     npm: options.npm,
     plugins: [builtinPlugin, ...(options.plugins ?? [])],
+    journalPath:
+      options.journalPath === null ? undefined : (options.journalPath ?? defaultJournalPath(root)),
   };
   return Engine.create(deps);
 }

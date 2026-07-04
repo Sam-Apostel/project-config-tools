@@ -33,6 +33,8 @@ export interface EngineDeps {
   runner?: CommandRunner;
   npm?: Registry;
   plugins?: Plugin[];
+  /** Absolute path to persist the undo journal (kept OUT of the project). */
+  journalPath?: string;
 }
 
 /**
@@ -45,6 +47,7 @@ export class Engine {
   private registry: OperationRegistry;
   private runner: CommandRunner;
   private npm: Registry;
+  private journalFile?: string;
   private journal = new Journal();
   private pending = new Map<string, Change>();
   private detectors: Detector[] = [];
@@ -59,6 +62,7 @@ export class Engine {
     this.registry = deps.registry;
     this.runner = deps.runner ?? new NodeCommandRunner();
     this.npm = deps.npm ?? new NpmRegistry();
+    this.journalFile = deps.journalPath;
   }
 
   static async create(deps: EngineDeps): Promise<Engine> {
@@ -66,7 +70,31 @@ export class Engine {
     engine.project = await detectProject(engine.fs, engine.root);
     await engine.loadPlugins(deps.plugins ?? []);
     engine.applyDetectors();
+    await engine.loadJournal();
     return engine;
+  }
+
+  private async loadJournal(): Promise<void> {
+    if (!this.journalFile) return;
+    try {
+      const entries = JSON.parse(await this.fs.readFile(this.journalFile)) as JournalEntry[];
+      this.journal.load(entries);
+      this.journalSeq = entries.reduce((max, e) => {
+        const n = Number(e.id.replace('jrn_', ''));
+        return Number.isFinite(n) && n > max ? n : max;
+      }, 0);
+    } catch {
+      /* no journal yet, or unreadable — start fresh */
+    }
+  }
+
+  private async saveJournal(): Promise<void> {
+    if (!this.journalFile) return;
+    try {
+      await this.fs.writeFile(this.journalFile, JSON.stringify(this.journal.all(), null, 2));
+    } catch {
+      /* persistence is best-effort; never block an operation on it */
+    }
   }
 
   private async loadPlugins(plugins: Plugin[]): Promise<void> {
@@ -226,6 +254,7 @@ export class Engine {
     };
     this.journal.add(entry);
     this.pending.delete(changeId);
+    await this.saveJournal();
     await this.refresh();
 
     return { ok: errors.length === 0, changeId, journalEntryId: entry.id, ranCommands, errors };
@@ -257,6 +286,7 @@ export class Engine {
     }
 
     this.journal.markUndone(entryId);
+    await this.saveJournal();
     await this.refresh();
 
     const errors =
