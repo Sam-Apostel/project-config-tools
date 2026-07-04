@@ -85,11 +85,11 @@ Where the "tell me what could be better" intelligence lands. Each item is
   user installs, each attributed to a named author. Ships the diagnostic
   `source` classification and the "install a starting point" picker.
   *([`spec/07-opinions.md`](spec/07-opinions.md).)*
-- **Distribution mechanism (no-clutter loading)** — the `visual-config.json`
-  id-list + `visual-config.lock` + fetch-and-cache resolution, so opinions load
-  as *data* (never npm packages) and plugins can load tool-managed. The full
-  hosted marketplace comes with the public plugin API (Phase 4); this ships the
-  loading half opinions depend on. *([`spec/08-registry-and-distribution.md`](spec/08-registry-and-distribution.md).)*
+- **Distribution — npm first (v1).** Plugins and opinion packs are ordinary npm
+  packages, auto-discovered from `devDependencies`, leaning on npm's lockfile/
+  registry/audit. The clutter-free data-fetched model (id-list + lock + hosted
+  registry) is **deferred** — no `visual-config.lock` spec yet.
+  *([`spec/08-registry-and-distribution.md`](spec/08-registry-and-distribution.md).)*
 - **Changelog + code-aware bump safety** — for every outdated dep, ingest the
   changelog between installed and target, extract breaking changes, and
   cross-reference them against the app's own usage so the UI (and later an agent)

@@ -6,6 +6,17 @@
 > marketplace** backed by an open registry index, and **opinions are never npm
 > packages**. Status: draft.
 
+> [!IMPORTANT]
+> **v1 decision: start with npm.** For the first implementation, plugins **and**
+> opinion packs are ordinary npm packages, auto-discovered from
+> `devDependencies` (the ESLint/Vite-plugin mechanism, spec 02 §2). This lets us
+> lean on npm's existing lockfile, registry, provenance, and `npm audit` and
+> **ship without building any of the tool-managed / cache / `visual-config.lock`
+> / hosted-registry machinery** below. The clutter-free, data-fetched model in
+> this spec (id-list + lock + registry) is the **deferred future direction**, to
+> revisit once there's real usage — the `visual-config.lock` format is
+> intentionally **not** specced yet. Everything below §2 is post-v1 design.
+
 Related: [`02-plugin-api.md`](02-plugin-api.md) · [`07-opinions.md`](07-opinions.md) ·
 [`../PRIOR-ART.md`](../PRIOR-ART.md)
 
@@ -193,11 +204,11 @@ so we take on what npm otherwise gives us:
    verification process, and how do we fund/host search without compromising the
    no-account, local-first stance? (An open git-backed data repo + a thin cached
    search API is the proposed shape.)
-2. **Plugin default: tool-managed vs npm.** Is tool-managed install (own
-   lockfile, project-clean) the right default for *code* plugins, or is that a
-   second-dep-system burden we’d rather avoid by defaulting plugins to `npm:` and
-   reserving the clutter-free path for opinions only? (Leaning: tool-managed
-   default, npm opt-in — but this is the biggest fork.)
+2. **Plugin default: tool-managed vs npm.** ✅ Resolved for v1: **npm first** —
+   both plugins and opinions are npm packages to start, leaning on npm's
+   lockfile/registry/audit. The tool-managed + `visual-config.lock` path is
+   deferred (and the lock format is not specced yet). Revisit clutter-free
+   distribution once there's usage.
 3. **Where the cache lives** — project-local `.visual-config/` (gitignored,
    simple, per-project) vs a shared `~/.visual-config/` (dedup across projects,
    but cross-project state). Probably shared cache + project lockfile.

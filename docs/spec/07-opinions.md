@@ -191,11 +191,12 @@ usable with facts only.
   on Kent’s public guidance, labeled as a community interpretation, `official:
   false`.
 
-You install any of these **not** as an npm package but by adding its id to your
-`visual-config.json` — one line, browsed and one-click-added from the in-tool
-marketplace. The tool fetches the pack as *data*, caches it, and starts
-attributing recommendations to that author. Zero `package.json`/`node_modules`
-footprint. Full mechanism: [`08-registry-and-distribution.md`](08-registry-and-distribution.md).
+How you install these is covered by [`08-registry-and-distribution.md`](08-registry-and-distribution.md).
+**In v1, opinion packs are ordinary npm packages** (`npm i -D <pack>`),
+auto-discovered — simplest to ship, leaning on npm's lockfile/registry. The
+**deferred** direction is to load them as *data* by id from a registry (zero
+`package.json`/`node_modules` footprint); that's the future, not v1. Either way
+the tool attributes each pack's recommendations to its author.
 
 ## 9. Why this is the right call
 
