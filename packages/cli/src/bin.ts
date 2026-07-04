@@ -14,6 +14,7 @@ interface CliArgs {
   uiDir?: string;
   open: boolean;
   plugins: boolean;
+  client?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -27,6 +28,7 @@ function parseArgs(argv: string[]): CliArgs {
     else if (arg === '--host') args.host = argv[++i];
     else if (arg === '--port') args.port = Number(argv[++i]);
     else if (arg === '--ui-dir') args.uiDir = argv[++i];
+    else if (arg === '--client') args.client = argv[++i];
     else if (!arg.startsWith('-') && !args.command) args.command = arg;
   }
   return args;
@@ -67,6 +69,24 @@ async function main(): Promise<void> {
     const engine = await openProject(root, { plugins });
     const { startStdioMcpServer } = await import('@visual-config/mcp');
     await startStdioMcpServer(engine);
+    return;
+  }
+
+  if (args.command === 'init-mcp') {
+    const root = resolve(args.cwd ?? process.cwd());
+    const engine = await openProject(root, { plugins: [], journalPath: null });
+    const clients =
+      !args.client || args.client === 'all' ? ['claude', 'cursor', 'vscode'] : [args.client];
+    const change = await engine.plan('add-mcp-config', { clients });
+    const result = await engine.apply(change.id);
+    if (result.ok) {
+      console.log(`\n  Registered the visual-config MCP server for: ${clients.join(', ')}`);
+      for (const edit of change.edits) console.log(`    ${edit.path}`);
+      console.log('\n  Agents opening this repo can now run `npx visual-config mcp`.\n');
+    } else {
+      console.error(`Failed: ${result.errors.join('; ')}`);
+      process.exit(1);
+    }
     return;
   }
 

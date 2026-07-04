@@ -7,6 +7,7 @@ import { removeDependencyOperation } from './operations/remove-dependency.js';
 import { setTsconfigOptionOperation } from './operations/set-tsconfig-option.js';
 import { setPackageFieldOperation } from './operations/set-package-field.js';
 import { upgradeDependenciesOperation } from './operations/upgrade-dependencies.js';
+import { addMcpConfigOperation } from './operations/add-mcp-config.js';
 import { homedir } from 'node:os';
 import { join as joinPath, resolve as resolvePath } from 'node:path';
 import { NodeFileSystem } from './fs.js';
@@ -37,6 +38,11 @@ export {
   upgradeDependenciesOperation,
   type UpgradeDependenciesInput,
 } from './operations/upgrade-dependencies.js';
+export {
+  addMcpConfigOperation,
+  type AddMcpConfigInput,
+  type McpClient,
+} from './operations/add-mcp-config.js';
 export { Journal, type JournalEntry, type Actor } from './journal.js';
 export { NodeFileSystem, InMemoryFileSystem } from './fs.js';
 export {
@@ -105,6 +111,7 @@ export const builtinOperations: Operation<unknown>[] = [
   setTsconfigOptionOperation as Operation<unknown>,
   setPackageFieldOperation as Operation<unknown>,
   upgradeDependenciesOperation as Operation<unknown>,
+  addMcpConfigOperation as Operation<unknown>,
 ];
 
 /**

@@ -132,6 +132,37 @@ describe('upgrade-dependencies', () => {
   });
 });
 
+describe('add-mcp-config', () => {
+  it('creates .mcp.json / .cursor / .vscode with the server entry', async () => {
+    const { engine, fs } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    const change = await engine.plan('add-mcp-config', { clients: ['claude', 'cursor', 'vscode'] });
+    expect(change.risk).toBe('safe');
+    expect(change.edits).toHaveLength(3);
+    await engine.apply(change.id);
+
+    const claude = JSON.parse(await fs.readFile('/proj/.mcp.json'));
+    expect(claude.mcpServers['visual-config']).toMatchObject({ command: 'npx' });
+    expect(claude.mcpServers['visual-config'].args).toContain('mcp');
+
+    // VS Code uses `servers`, not `mcpServers`.
+    const vscode = JSON.parse(await fs.readFile('/proj/.vscode/mcp.json'));
+    expect(vscode.servers['visual-config'].command).toBe('npx');
+  });
+
+  it('merges into an existing .mcp.json, preserving other servers', async () => {
+    const existing = JSON.stringify({ mcpServers: { other: { command: 'x' } } }, null, 2) + '\n';
+    const { engine, fs } = await makeEngine({
+      'package.json': pkg({}),
+      '.mcp.json': existing,
+    });
+    const change = await engine.plan('add-mcp-config', { clients: ['claude'] });
+    await engine.apply(change.id);
+    const config = JSON.parse(await fs.readFile('/proj/.mcp.json'));
+    expect(config.mcpServers.other).toBeDefined();
+    expect(config.mcpServers['visual-config']).toBeDefined();
+  });
+});
+
 describe('set-package-field', () => {
   it('sets an allowed metadata field', async () => {
     const { engine, fs } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
