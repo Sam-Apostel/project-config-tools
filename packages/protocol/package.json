@@ -1,0 +1,13 @@
+{
+  "name": "@visual-config/protocol",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared RPC contract types between the daemon and the faces (no runtime).",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@visual-config/core": "workspace:*"
+  }
+}

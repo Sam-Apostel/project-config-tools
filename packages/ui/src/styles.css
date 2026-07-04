@@ -1,0 +1,342 @@
+/* visual-config UI — design tokens (subset of docs/design/tokens.css) + components. */
+:root,
+:root[data-theme='dark'] {
+  --bg: #0e1116;
+  --bg-subtle: #151a21;
+  --surface: #1b212a;
+  --surface-hi: #232b36;
+  --border: #2a323d;
+  --border-hi: #3a4552;
+  --text: #e6e9ed;
+  --text-muted: #9aa4b2;
+  --text-faint: #6b7482;
+  --brand: #5b8def;
+  --brand-hi: #7ba4f2;
+  --brand-quiet: #1a2536;
+  --focus-ring: #7ba4f2;
+  --ok: #3fb27f;
+  --info: #5b8def;
+  --warn: #e0a44b;
+  --warn-quiet: #2a2113;
+  --danger: #e5715f;
+  --critical: #c0455e;
+  --shadow-2: 0 12px 32px rgba(0, 0, 0, 0.32);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #fbfbfa;
+    --bg-subtle: #f4f4f2;
+    --surface: #ffffff;
+    --surface-hi: #ffffff;
+    --border: #e4e4e1;
+    --border-hi: #cfcfcb;
+    --text: #1a1d21;
+    --text-muted: #5c636e;
+    --text-faint: #8a909a;
+    --brand: #2f6be0;
+    --brand-hi: #1e5ad1;
+    --brand-quiet: #eaf1fe;
+    --ok: #1e8e5a;
+    --warn: #b87413;
+    --warn-quiet: #fbf0dc;
+    --danger: #c0392b;
+    --shadow-2: 0 12px 32px rgba(20, 20, 20, 0.14);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    400 14px/1.45 Inter,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+code,
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+}
+a {
+  color: var(--brand);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 216px 1fr;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+}
+.topbar {
+  grid-column: 1 / 3;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+.topbar h1 {
+  font-size: 15px;
+  margin: 0;
+  font-weight: 600;
+}
+.topbar .meta {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.rail {
+  border-right: 1px solid var(--border);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-subtle);
+}
+.rail button {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+.rail button:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.rail button.active {
+  background: var(--brand-quiet);
+  color: var(--text);
+}
+.rail .count {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.main {
+  overflow: auto;
+  padding: 24px;
+  max-width: 960px;
+}
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.section-sub {
+  color: var(--text-muted);
+  margin: 0 0 20px;
+  font-size: 13px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.row:last-child {
+  border-bottom: none;
+}
+.row .name {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px;
+}
+.row .grow {
+  flex: 1;
+}
+.badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--surface-hi);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.badge.dev {
+  color: var(--info);
+}
+.badge.risk-safe {
+  color: var(--ok);
+}
+.badge.risk-review {
+  color: var(--warn);
+  background: var(--warn-quiet);
+}
+.badge.risk-breaking {
+  color: var(--danger);
+}
+
+.btn {
+  background: var(--surface-hi);
+  border: 1px solid var(--border-hi);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+.btn:hover {
+  border-color: var(--brand);
+}
+.btn.primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.btn.primary:hover {
+  background: var(--brand-hi);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn.small {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+input.field {
+  background: var(--bg);
+  border: 1px solid var(--border-hi);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font: inherit;
+}
+input.field:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.form-inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.console {
+  margin-top: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
+  color: var(--text-muted);
+}
+
+/* The Diff Sheet — the signature confirm surface. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet {
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
+  box-shadow: var(--shadow-2);
+  width: min(860px, 100%);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.sheet header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sheet header .summary {
+  font-weight: 600;
+  flex: 1;
+}
+.sheet .diff {
+  overflow: auto;
+  padding: 4px 0;
+  margin: 0;
+}
+.sheet .diff pre {
+  margin: 0;
+  padding: 12px 20px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  white-space: pre;
+  overflow-x: auto;
+}
+.diff-add {
+  color: var(--ok);
+}
+.diff-del {
+  color: var(--danger);
+}
+.diff-meta {
+  color: var(--text-faint);
+}
+.sheet .notes {
+  padding: 8px 20px;
+}
+.note {
+  font-size: 13px;
+  padding: 6px 0;
+}
+.note.warn {
+  color: var(--warn);
+}
+.note.danger {
+  color: var(--danger);
+}
+.sheet footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.status {
+  padding: 40px;
+  color: var(--text-muted);
+}
+.error-banner {
+  background: var(--warn-quiet);
+  color: var(--warn);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.empty {
+  color: var(--text-faint);
+  padding: 20px 14px;
+  font-size: 13px;
+}

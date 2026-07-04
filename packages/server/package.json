@@ -1,0 +1,19 @@
+{
+  "name": "@visual-config/server",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The local daemon: birpc over WebSocket, static UI hosting, script tasks.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@visual-config/core": "workspace:*",
+    "@visual-config/protocol": "workspace:*",
+    "birpc": "^2.3.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13"
+  }
+}

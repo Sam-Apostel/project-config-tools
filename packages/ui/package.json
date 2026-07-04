@@ -1,0 +1,26 @@
+{
+  "name": "@visual-config/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The React SPA served in the browser and embedded in IDE webviews.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "birpc": "^2.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@visual-config/core": "workspace:*",
+    "@visual-config/protocol": "workspace:*",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}
