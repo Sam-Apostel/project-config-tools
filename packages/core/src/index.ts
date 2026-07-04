@@ -8,7 +8,8 @@ import { setTsconfigOptionOperation } from './operations/set-tsconfig-option.js'
 import { NodeFileSystem } from './fs.js';
 import type { CommandRunner } from './runner.js';
 import type { Registry } from './registry/npm.js';
-import type { FileSystem } from './types.js';
+import type { FileSystem, Operation } from './types.js';
+import type { Plugin } from './plugin.js';
 
 export * from './types.js';
 export { Engine, type EngineDeps } from './engine.js';
@@ -54,32 +55,55 @@ export {
   type DiagnosticSource,
 } from './diagnostics.js';
 
-/** Registry preloaded with the built-in (first-party) operations. */
+export { PLUGIN_API_VERSION } from './plugin.js';
+export type { Plugin, PluginContext, Detector } from './plugin.js';
+
+/** The built-in (first-party) operations, defined once. */
+export const builtinOperations: Operation<unknown>[] = [
+  addScriptOperation as Operation<unknown>,
+  removeScriptOperation as Operation<unknown>,
+  installPackageOperation as Operation<unknown>,
+  removeDependencyOperation as Operation<unknown>,
+  setTsconfigOptionOperation as Operation<unknown>,
+];
+
+/**
+ * The built-ins as a first-party plugin — we dogfood the exact API third
+ * parties use, so it can't rot ("everything is a plugin, including built-ins").
+ */
+export const builtinPlugin: Plugin = {
+  id: 'builtin',
+  displayName: 'visual-config built-ins',
+  apiVersion: 1,
+  setup(context) {
+    for (const op of builtinOperations) context.registerOperation(op);
+  },
+};
+
+/** Registry preloaded with the built-in operations (used directly in tests). */
 export function createDefaultRegistry(): OperationRegistry {
   const registry = new OperationRegistry();
-  registry.register(addScriptOperation);
-  registry.register(removeScriptOperation);
-  registry.register(installPackageOperation);
-  registry.register(removeDependencyOperation);
-  registry.register(setTsconfigOptionOperation);
+  for (const op of builtinOperations) registry.register(op);
   return registry;
 }
 
 export interface OpenProjectOptions {
   fs?: FileSystem;
-  registry?: OperationRegistry;
   runner?: CommandRunner;
   npm?: Registry;
+  /** Additional plugins, loaded after the built-ins. */
+  plugins?: Plugin[];
 }
 
-/** Convenience: build an {@link Engine} for a project root with built-ins registered. */
+/** Convenience: build an {@link Engine} for a project root, built-ins + plugins loaded. */
 export function openProject(root: string, options: OpenProjectOptions = {}): Promise<Engine> {
   const deps: EngineDeps = {
     root,
     fs: options.fs ?? new NodeFileSystem(),
-    registry: options.registry ?? createDefaultRegistry(),
+    registry: new OperationRegistry(),
     runner: options.runner,
     npm: options.npm,
+    plugins: [builtinPlugin, ...(options.plugins ?? [])],
   };
   return Engine.create(deps);
 }

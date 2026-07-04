@@ -122,6 +122,7 @@ export async function detectProject(fs: FileSystem, root: string): Promise<Proje
     scripts,
     dependencies,
     configFiles,
+    detected: [],
     workspaces: normalizeWorkspaces(pkg.workspaces),
   };
 }

@@ -24,6 +24,7 @@ function project(deps: ProjectModel['dependencies']): ProjectModel {
     scripts: [],
     dependencies: deps,
     configFiles: [],
+    detected: [],
     workspaces: [],
   };
 }

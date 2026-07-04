@@ -64,6 +64,12 @@ importers:
         specifier: ^7.5.8
         version: 7.7.1
 
+  packages/kit:
+    dependencies:
+      '@visual-config/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':

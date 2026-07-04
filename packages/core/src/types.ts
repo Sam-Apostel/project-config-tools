@@ -139,6 +139,16 @@ export interface ConfigFileRef {
   editable: 'full' | 'static-subset' | 'read-only';
 }
 
+/** A tool/framework a detector recognized in the project. */
+export interface DetectedTool {
+  id: string;
+  version?: string;
+  /** Why we think so (dep present, config file, script). */
+  evidence: string[];
+  /** Plugin that claimed it. */
+  pluginId?: string;
+}
+
 export interface ProjectModel {
   root: string;
   packageManager: PackageManager;
@@ -148,6 +158,7 @@ export interface ProjectModel {
   scripts: ScriptEntry[];
   dependencies: DependencyEntry[];
   configFiles: ConfigFileRef[];
+  detected: DetectedTool[];
   workspaces: string[];
 }
 

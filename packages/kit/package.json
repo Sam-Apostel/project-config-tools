@@ -1,0 +1,13 @@
+{
+  "name": "@visual-config/kit",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Author-facing helpers for building visual-config plugins.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@visual-config/core": "workspace:*"
+  }
+}

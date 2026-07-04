@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import type {
   ApplyResult,
   Change,
+  DetectedTool,
   FileSystem,
   OperationContext,
   OperationInfo,
@@ -15,6 +16,7 @@ import { NodeCommandRunner, type CommandRunner, type RunOptions } from './runner
 import { NpmRegistry, type Registry } from './registry/npm.js';
 import { searchCatalog, type CatalogQuery, type CatalogResult } from './catalog.js';
 import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
+import { PLUGIN_API_VERSION, type Detector, type Plugin, type PluginContext } from './plugin.js';
 
 export interface EngineDeps {
   root: string;
@@ -22,6 +24,7 @@ export interface EngineDeps {
   registry: OperationRegistry;
   runner?: CommandRunner;
   npm?: Registry;
+  plugins?: Plugin[];
 }
 
 /**
@@ -36,6 +39,7 @@ export class Engine {
   private npm: Registry;
   private journal = new Journal();
   private pending = new Map<string, Change>();
+  private detectors: Detector[] = [];
   private changeSeq = 0;
   private journalSeq = 0;
   private project!: ProjectModel;
@@ -50,12 +54,47 @@ export class Engine {
 
   static async create(deps: EngineDeps): Promise<Engine> {
     const engine = new Engine(deps);
-    await engine.refresh();
+    engine.project = await detectProject(engine.fs, engine.root);
+    await engine.loadPlugins(deps.plugins ?? []);
+    engine.applyDetectors();
     return engine;
+  }
+
+  private async loadPlugins(plugins: Plugin[]): Promise<void> {
+    for (const plugin of plugins) {
+      if (plugin.apiVersion && plugin.apiVersion > PLUGIN_API_VERSION) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `Skipping plugin "${plugin.id}": needs API v${plugin.apiVersion}, this build is v${PLUGIN_API_VERSION}`,
+        );
+        continue;
+      }
+      const context: PluginContext = {
+        project: this.project,
+        registerOperation: (op) => this.registry.register(op),
+        registerDetector: (detector) => this.detectors.push(detector),
+        log: () => undefined,
+      };
+      await plugin.setup(context);
+    }
+  }
+
+  private applyDetectors(): void {
+    const detected: DetectedTool[] = [];
+    for (const detector of this.detectors) {
+      try {
+        const tool = detector.detect(this.project);
+        if (tool) detected.push({ ...tool, pluginId: tool.pluginId ?? detector.id });
+      } catch {
+        /* a bad detector must not sink detection */
+      }
+    }
+    this.project.detected = detected;
   }
 
   async refresh(): Promise<ProjectModel> {
     this.project = await detectProject(this.fs, this.root);
+    this.applyDetectors();
     return this.project;
   }
 
