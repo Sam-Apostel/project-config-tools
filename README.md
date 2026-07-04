@@ -9,13 +9,32 @@ already have.
 </p>
 
 > [!IMPORTANT]
-> **Status: design & planning (pre-alpha, no runnable code yet).**
-> This repository currently contains the vision and plan, not an
-> implementation. This README describes the **intended** experience so the
-> design is concrete and reviewable. Nothing below installs or runs today.
-> Track progress in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status: early alpha — runs from source, not yet published to npm.**
+> The core spine works today: `npx`-style browser UI + daemon, the
+> Operation→Change→undo engine, a package catalog, outdated diagnostics, and an
+> MCP server. Not everything described below is built yet — see
+> [what works today](#what-works-today) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
 >
-> *`visual-config` is a descriptive package name, not a brand — see [`docs/DESIGN-LANGUAGE.md`](docs/DESIGN-LANGUAGE.md).*
+> _`visual-config` is a descriptive package name, not a brand — see [`docs/DESIGN-LANGUAGE.md`](docs/DESIGN-LANGUAGE.md)._
+
+---
+
+## What works today
+
+Running from source (see [Development](#run-it-from-source-development)):
+
+- 🟢 `visual-config` boots a local daemon and opens a **React UI** in the browser
+- 🟢 **Overview / Dependencies / Scripts / History** views over your real `package.json`
+- 🟢 **Package catalog** — search the npm registry, install by selecting (no free-typed name)
+- 🟢 **Outdated diagnostics** — facts from the registry, with Upgrade buttons
+- 🟢 **Run scripts** as buttons with streamed output
+- 🟢 The **Diff Sheet** — every mutation previewed and confirmed, with **undo**
+- 🟢 Operations: add/remove script, install/remove dependency, set tsconfig option
+- 🟢 **MCP server** (`visual-config mcp`) exposing the same operations to agents
+- 🟡 Next up: the plugin API, opinions, migrations, more config adapters, IDE panels
+
+Everything writes through a **format- and comment-preserving** layer, and the
+files stay the only source of truth.
 
 ---
 
@@ -37,11 +56,11 @@ keeping the files as the source of truth. Read the [Manifesto](MANIFESTO.md).
   previews the exact change.
 - **Know which upgrades are safe** — for every outdated dep, read the changelog
   between your version and the latest, with breaking changes flagged and
-  cross-referenced against *your* code so you (or an AI) can tell which major
+  cross-referenced against _your_ code so you (or an AI) can tell which major
   bumps are actually safe to take. Migrations are backed by codemods or, where
   none exist, maintainer-authored agent skills.
 - **Install from a catalog** — browse packages with search and filters
-  (types, size, popularity, license, maintained). Installing is *selecting*,
+  (types, size, popularity, license, maintained). Installing is _selecting_,
   not typing a name into a command. No free-typed install path.
 - **Run scripts as buttons** — every `package.json` script becomes a labeled
   button with live output. No recalling incantations.
@@ -49,7 +68,7 @@ keeping the files as the source of truth. Read the [Manifesto](MANIFESTO.md).
   what's non-default, as neutral facts. (Suggestions like "turn on `strict`"
   come from opinion packs you install — see below — never baked in.)
 - **Neutral base, installable opinions** — out of the box the tool states only
-  *facts* (vulnerable, outdated, type-wrong, non-default). Want guidance?
+  _facts_ (vulnerable, outdated, type-wrong, non-default). Want guidance?
   Install an **opinion pack** attributed to someone you trust — the TypeScript
   team, Matt Pocock, Vercel, Tanner — and its recommendations appear, labeled as
   theirs. Stack several; see where they disagree; pick. The maintainer's taste
@@ -87,7 +106,7 @@ npm install -D visual-config   # then: npx visual-config  (or a "visual-config" 
 ```
 
 > [!NOTE]
-> **On the "npx typo" concern:** the point of visual-config is precisely to *stop*
+> **On the "npx typo" concern:** the point of visual-config is precisely to _stop_
 > installing packages by typing names into commands. You run one trusted,
 > pinned command (`visual-config`) and then install everything else by selecting it
 > from a catalog backed by verified registry data. See the safety model in
@@ -111,7 +130,7 @@ engine, shown wherever it fits. Feasibility and limits in
 
 Every operation visual-config exposes as a button — install, upgrade, migrate, switch
 linter, add an image domain — is also exposed as an **MCP server** so AI
-agents get *guided, validated, reversible* config tools instead of free-typing
+agents get _guided, validated, reversible_ config tools instead of free-typing
 shell commands:
 
 ```bash
@@ -132,20 +151,52 @@ which is exactly where you want them constrained as they take on more work.
 
 ## Documentation
 
-| Doc | What's in it |
-| --- | --- |
-| [MANIFESTO.md](MANIFESTO.md) | Why this exists and what we believe |
-| [docs/ANALYSIS.md](docs/ANALYSIS.md) | What's possible + feasibility score on every part of the vision |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Phased plan from `npx` tool to IDE plugins to MCP |
-| [docs/PRIOR-ART.md](docs/PRIOR-ART.md) | Existing projects in this space and the gap we fill |
-| [docs/IDE-INTEGRATION.md](docs/IDE-INTEGRATION.md) | How deep IDE integration can realistically go |
-| [docs/DESIGN-LANGUAGE.md](docs/DESIGN-LANGUAGE.md) | Visual + interaction design system |
-| [docs/spec/](docs/spec/) | **Concrete technical specs** — architecture, core engine, plugin API, config adapters, migrations, MCP/RPC, IDE surface |
+| Doc                                                | What's in it                                                                                                            |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [MANIFESTO.md](MANIFESTO.md)                       | Why this exists and what we believe                                                                                     |
+| [docs/ANALYSIS.md](docs/ANALYSIS.md)               | What's possible + feasibility score on every part of the vision                                                         |
+| [docs/ROADMAP.md](docs/ROADMAP.md)                 | Phased plan from `npx` tool to IDE plugins to MCP                                                                       |
+| [docs/PRIOR-ART.md](docs/PRIOR-ART.md)             | Existing projects in this space and the gap we fill                                                                     |
+| [docs/IDE-INTEGRATION.md](docs/IDE-INTEGRATION.md) | How deep IDE integration can realistically go                                                                           |
+| [docs/DESIGN-LANGUAGE.md](docs/DESIGN-LANGUAGE.md) | Visual + interaction design system                                                                                      |
+| [docs/spec/](docs/spec/)                           | **Concrete technical specs** — architecture, core engine, plugin API, config adapters, migrations, MCP/RPC, IDE surface |
+
+## Run it from source (Development)
+
+The tool isn't published yet, but you can run it from this repo. Requires
+Node ≥20 and pnpm.
+
+```bash
+pnpm install
+pnpm build:ui                 # build the React SPA the daemon serves
+pnpm --filter visual-config exec tsx src/bin.ts --cwd /path/to/your/project
+# → opens http://127.0.0.1:<port> in your browser
+
+# Or the MCP server for an agent (stdio):
+pnpm --filter visual-config exec tsx src/bin.ts mcp --cwd /path/to/your/project
+```
+
+Workspace layout (see [`docs/spec/00-architecture.md`](docs/spec/00-architecture.md)):
+
+| Package                   | Role                                                                                                     |
+| ------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `@visual-config/core`     | headless engine: project model, operations, Change/undo, format-preserving writers, registry/diagnostics |
+| `@visual-config/protocol` | shared birpc contract (types only)                                                                       |
+| `@visual-config/server`   | local daemon (HTTP static SPA + WebSocket birpc + script tasks)                                          |
+| `@visual-config/ui`       | the React SPA (browser + future IDE webview)                                                             |
+| `@visual-config/mcp`      | MCP server projecting operations as agent tools                                                          |
+| `visual-config` (cli)     | the `visual-config` bin                                                                                  |
+
+```bash
+pnpm test         # unit + daemon integration tests
+pnpm typecheck    # tsc across the workspace
+pnpm format       # prettier
+```
 
 ## Status & contributing
 
-Pre-alpha, planning stage. The repo pushes directly to `main` until v1 (no PR
-workflow yet). Issues and design discussion welcome. See the roadmap for the
+Early alpha. The repo pushes directly to `main` until v1 (no PR workflow yet).
+Issues and design discussion welcome. See the [roadmap](docs/ROADMAP.md) for the
 current milestone and open questions.
 
 ## License
