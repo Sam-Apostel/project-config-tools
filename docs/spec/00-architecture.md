@@ -133,17 +133,33 @@ receives the same Change as structured JSON. See
    event. An agent doing the same thing calls the MCP tool `install_package`,
    which is the same Operation with `apply` gated behind host approval.
 
-## 5. Technology choices (proposed)
+## 5. Technology choices (decided)
 
 | Concern | Choice | Why |
 |---|---|---|
-| Core language | **TypeScript** | Shared types with the UI; best JS/TS AST ecosystem; MCP/RPC SDKs are JS-first. (Rust core reconsidered only if perf demands — Open Question in ROADMAP.) |
+| Core language / runtime | **TypeScript · ESM · Node ≥20** | Shared types with the UI; best JS/TS AST ecosystem; MCP/RPC SDKs are JS-first. (Rust core reconsidered only if perf demands.) |
+| Repo | **pnpm-workspaces monorepo**, built with **Vite**, tested with **Vitest** | One repo, many published packages sharing types (see §5.1). |
 | JSON/JSONC edits | **`jsonc-parser`** edit APIs | Minimal, comment-preserving edits to `package.json`/`tsconfig`. |
 | JS/TS config edits | **`recast`**-class AST + printer | Round-trips `next.config.ts` etc. within a **static-object-literal subset**; falls back to raw when dynamic. |
 | RPC (UI ⇄ daemon) | **`birpc`** over WebSocket | Proven in Nuxt/Vite DevTools; typed, bidirectional, multi-client broadcast. |
 | Agent transport | **MCP** (`@modelcontextprotocol/sdk`) | stdio for local, streamable HTTP optional. |
-| UI | SPA (framework TBD) consuming design tokens | One bundle reused in browser + IDE. |
+| UI | **React** SPA consuming the design tokens | Largest contributor pool + component ecosystem; what most plugin authors know. One bundle reused in browser + IDE. |
 | Plugin UI | **Declarative form schema first**, iframe panels for advanced | Most plugins ship a schema + docs, not code — safer, simpler (see plugin spec). |
+
+### 5.1 Proposed package graph
+
+```
+packages/
+  core/        @visual-config/core     — project model, operations, changes, writers, undo (no transport)
+  adapters/    @visual-config/adapter-*  — package-json, tsconfig, … (first-party plugins)
+  server/      @visual-config/server   — the daemon: birpc/WS, session, auth/origin guard
+  cli/         visual-config           — the bin: `visual-config` (serve+open browser), `visual-config mcp`
+  mcp/         @visual-config/mcp      — MCP server projecting the operation registry
+  ui/          @visual-config/ui       — the React SPA (browser + IDE webview)
+  kit/         @visual-config/kit      — definePlugin + typed contribution API for plugin authors
+```
+`core` never imports a transport; `server`/`mcp`/`cli` depend on `core`; `ui`
+depends only on the shared RPC/types. This is what keeps every face thin.
 
 ## 6. Non-negotiable invariants
 

@@ -15,6 +15,30 @@ foundation. Concrete design in [`spec/`](spec/); see especially
 
 ---
 
+## Milestone 0 — The thin end-to-end slice (first code)
+
+Before fanning out Phase 0/1, build the **whole spine on the smallest feature**,
+so every layer is proven end-to-end and there's something visible fast:
+
+1. Detect the project + parse `package.json` (`@visual-config/core` + the
+   `package-json` adapter).
+2. A minimal **React** UI (`@visual-config/ui`) that lists dependencies and
+   scripts, served by the daemon over **birpc/WS** (`@visual-config/server`,
+   `visual-config` CLI).
+3. **Run a script** as a button with streamed output.
+4. **One mutating Operation** — `add-script` — going the full route:
+   `plan()` → **Diff Sheet** (format-preserving edit) → confirm → `apply()` →
+   **undo**.
+
+**Exit criteria:** `npx visual-config` opens the browser, shows deps/scripts,
+runs a script, and adds a script via a confirmed, reversible diff — exercising
+core → server → birpc → React UI → Change → journal all at once. Stack:
+TypeScript/ESM/Node≥20, pnpm workspaces, Vite, Vitest, React (all decided; see
+[`spec/00-architecture.md`](spec/00-architecture.md) §5). Everything after this
+widens a proven spine.
+
+---
+
 ## Phase 0 — Foundations (the core, invisible to users)
 
 The unglamorous work that everything else depends on. No user-facing feature
@@ -237,10 +261,11 @@ toggle available, native, and clearly labeled as a reversible view convenience.
 
 1. **The name.** ✅ Decided: `visual-config` (verified free on npm). A plain
    descriptive package name, not a brand. Runners-up: `configview`, `config-gui`.
-2. **Core language.** TS is the pragmatic choice (ecosystem, AST tooling,
-   shared with the UI). A Rust core (Biome-style) would be faster and reusable
-   but slower to build and harder to share types with the web UI. **Lean TS**
-   unless perf demands otherwise.
+2. **Core language & stack.** ✅ Decided: **TypeScript · ESM · Node ≥20**,
+   **pnpm-workspaces** monorepo, **Vite** + **Vitest**, **React** SPA. First
+   milestone is a **thin end-to-end vertical slice** (see Milestone 0). A Rust
+   core is reconsidered only if perf demands. Package graph in
+   [`spec/00-architecture.md`](spec/00-architecture.md) §5.1.
 3. **How opinionated?** ✅ Resolved: **completely neutral base; opinions are
    installable and attributed.** The base states facts only; recommendations
    come from opinion packs a user installs (Matt Pocock / Vercel / the
