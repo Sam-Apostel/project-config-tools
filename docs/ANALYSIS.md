@@ -73,14 +73,15 @@ Two very different halves:
 **Feasibility ●●●●○  ·  Value ●●●●○  ·  Verdict: Ship soon**
 
 The TypeScript compiler API resolves the **effective** config (following
-`extends`) and exposes every option and its default. So we can show "here's
-your effective config, here's what's non-default, here's what's unset." The
-"what could be improved" layer is a **curated rules engine**: e.g. "`strict`
-is off → recommend on", "`moduleResolution` is `node` → `bundler` for your
-setup", "no `skipLibCheck` → faster builds". These are opinionated but
-well-established recommendations (tsconfig/bases, the TS team's own guidance).
-Feasible; the ongoing cost is *maintaining* the recommendation set as TS
-evolves. Great candidate for community-contributed rules.
+`extends`) and exposes every option and its default. So we can show, as neutral
+**facts**, "here's your effective config, here's what's non-default, here's
+what's unset." The "what could be improved" layer is where opinion lives — and
+we **don't bake it in**. Suggestions like "`strict` off → turn it on" or
+"`moduleResolution` → `bundler`" are contributed by installed, attributed
+**opinion packs** (the TypeScript team's, Matt Pocock's, etc.), not by the base
+tool. This keeps the maintainer's taste out and turns the recommendation set
+into a community ecosystem instead of a maintenance burden. See capability #15
+and [`spec/07-opinions.md`](spec/07-opinions.md).
 
 ### 4. Install a package by browsing a catalog (search + filters)
 
@@ -241,6 +242,27 @@ the API is dogfooded — is specced in [`spec/02-plugin-api.md`](spec/02-plugin-
 Get the Operation/Change contract right (capability #12's requirement) and the
 plugin system and MCP both fall out of the same foundation.
 
+### 15. Neutral base + installable, attributed opinions
+
+**Feasibility ●●●●○  ·  Value ●●●●●  ·  Verdict: The answer to "how opinionated?"**
+
+Added to the vision, and it resolves the thorniest open question. The base is
+**completely unopinionated** — it states verifiable facts (vulnerable, outdated,
+type-wrong, publish-invalid, non-default) and never a preference. All
+recommendations come from **opinion packs** a user installs, each attributed to
+a named person or org ("the TypeScript team", Matt Pocock, Kent C. Dodds,
+Vercel, Tanner). You can stack several; conflicts are shown side-by-side,
+attributed, never auto-resolved. Feasibility is high because an opinion pack is
+the *most restricted* plugin class — **pure declarative data, no code** — so
+it's trivially safe to install, and applying a recommendation reuses the
+existing Operation→Change→undo pipeline. The one genuine design decision is
+**attribution/verification** (real people's names → impersonation risk); the
+spec proposes verified-official-only-under-the-author's-own-scope with community
+packs clearly labeled. This is both a credibility asset (the maintainer's taste
+is literally not in the codebase) and a growth flywheel (authors publish and
+promote packs, like `eslint-config-*` across the whole config surface). Design:
+[`spec/07-opinions.md`](spec/07-opinions.md).
+
 ---
 
 ## Scorecard (at a glance)
@@ -261,6 +283,7 @@ plugin system and MCP both fall out of the same foundation.
 | 12 | MCP server for agents | ●●●●○ | ●●●●● | Ship soon |
 | 13 | Anti-typo safety model | ●●●●○ | ●●●●● | Design principle |
 | 14 | Plugin system | ●●●○○ | ●●●●● | Architect from day one |
+| 15 | Neutral base + attributed opinions | ●●●●○ | ●●●●● | Answers "how opinionated?" |
 
 ---
 

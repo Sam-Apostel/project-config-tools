@@ -76,9 +76,15 @@ Where the "tell me what could be better" intelligence lands. Each item is
 "do one instance impeccably, then fan out."
 
 - **TypeScript panel** — effective config (resolved through `extends`),
-  non-default vs unset options, and a **curated improvement-rules engine**
-  ("`strict` off → recommend on"), with `@tsconfig/bases` presets as one-click
-  applies. *(#3.)*
+  non-default vs unset options (as neutral *facts*). Opinionated suggestions
+  ("`strict` off → turn it on") are **not baked in** — they come from installed,
+  attributed **opinion packs** (spec 07); the base ships none. `@tsconfig/bases`
+  presets remain available as one-click applies. *(#3.)*
+- **Opinions system (facts vs. opinions)** — formalize the split: the base
+  surfaces only verifiable facts; recommendations arrive via opinion packs a
+  user installs, each attributed to a named author. Ships the diagnostic
+  `source` classification and the "install a starting point" picker.
+  *([`spec/07-opinions.md`](spec/07-opinions.md).)*
 - **Changelog + code-aware bump safety** — for every outdated dep, ingest the
   changelog between installed and target, extract breaking changes, and
   cross-reference them against the app's own usage so the UI (and later an agent)
@@ -220,9 +226,12 @@ toggle available, native, and clearly labeled as a reversible view convenience.
    shared with the UI). A Rust core (Biome-style) would be faster and reusable
    but slower to build and harder to share types with the web UI. **Lean TS**
    unless perf demands otherwise.
-3. **How opinionated?** Do we *recommend* a stack (nudging toward, say, Biome or
-   strict TS) or stay strictly neutral? Recommendations add value but risk
-   alienating users — probably "neutral defaults, opt-in opinions."
+3. **How opinionated?** ✅ Resolved: **completely neutral base; opinions are
+   installable and attributed.** The base states facts only; recommendations
+   come from opinion packs a user installs (Matt Pocock / Vercel / the
+   TypeScript team / …). Keeps the maintainer's taste out by default and turns
+   opinionation into an ecosystem. See [`spec/07-opinions.md`](spec/07-opinions.md).
+   (Remaining sub-question: verification strictness for author attribution.)
 4. **Registry data & rate limits** — how much npm/OSV/Bundlephobia data do we
    fetch live vs cache; offline behavior.
 5. **The `next.config.js`-is-code boundary** — exactly where we draw the

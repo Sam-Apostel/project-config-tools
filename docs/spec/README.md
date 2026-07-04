@@ -17,6 +17,7 @@ refine the higher-level docs ([`../ANALYSIS.md`](../ANALYSIS.md),
 | 04 | [Migrations](04-migrations.md) | Codemod- and agent-skill-backed migrations; changelog ingestion; **code-aware bump safety analysis**. |
 | 05 | [MCP & RPC](05-mcp-and-rpc.md) | birpc (UI ⇄ daemon) and the MCP server (agents ⇄ daemon), both as thin projections of the Operation registry. |
 | 06 | [IDE Surface](06-ide-surface.md) | Embedding the panel; the "cleaner workspace" toggle built on IDE-native features only. |
+| 07 | [Opinions](07-opinions.md) | Neutral base (facts only); installable, attributed **opinion packs** (Matt Pocock / Vercel / the TypeScript team / …). |
 
 ## The three load-bearing ideas
 
@@ -31,6 +32,9 @@ refine the higher-level docs ([`../ANALYSIS.md`](../ANALYSIS.md),
 3. **The files are the only source of truth, always.** Format-preserving writes
    or an honest refusal; native-only view tweaks; no shadow store (specs 01, 03,
    06).
+4. **Neutral by default; opinion is a choice.** The base states facts, never
+   preferences. Recommendations come only from installed, attributed opinion
+   packs — keeping the maintainer's taste out of the tool (spec 07).
 
 ## Open questions
 

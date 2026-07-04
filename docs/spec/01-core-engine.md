@@ -174,13 +174,23 @@ The daemon rejects any `FileEdit`/`PlannedCommand` outside the declared scope
 before it reaches the user. This is how third-party plugins stay safe (see
 [`02-plugin-api.md`](02-plugin-api.md) §Security).
 
-## 7. Events
+## 7. Diagnostics: facts vs. opinions
+
+Every diagnostic the core emits is classified by `source`: a **fact** (from a
+verifiable provider — OSV, publint, attw, registry, tsc) or an **opinion** (from
+an installed, attributed opinion pack). **The base ships only facts**; no
+preference is baked in. This split is load-bearing and specified in
+[`07-opinions.md`](07-opinions.md); the UI renders facts plainly and opinions
+with an author chip.
+
+## 8. Events
 
 The core emits typed events the daemon broadcasts to all faces:
 `project.changed`, `operation.applied`, `plugin.loaded`, `diagnostics.updated`
-(vulns/outdated/improvements recomputed). Faces are stateless renderers of these.
+(facts + any installed opinions recomputed). Faces are stateless renderers of
+these.
 
-## 8. What lives where (so MCP is free)
+## 9. What lives where (so MCP is free)
 
 Because operations, schemas, and Changes live in the core — not in any face —
 the MCP server (spec 05) is a thin loop: list operations → expose each as a

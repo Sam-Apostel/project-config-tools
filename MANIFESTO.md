@@ -83,6 +83,16 @@ ecosystem — against the exact same API our built-in features use. The built-in
 have no privileges a plugin can't have. A plugin's actions get the same diff
 preview, undo, and agent (MCP) access as everything else, for free.
 
+**8. The base has no opinions; you install the ones you want.**
+There is no neutral "best" tsconfig or linter — any default we baked in would be
+*our* taste smuggled in as a default. So the base ships none. It states only
+**facts**: what's vulnerable, outdated, deprecated, type-wrong, or non-default.
+*Recommendations* — "enable `strict`", "prefer Biome", "use these libraries" —
+come only from **opinion packs you choose to install**, each attributed to the
+person or organization behind them: the TypeScript team, Matt Pocock, Vercel,
+Tanner. Install several, see where they disagree, and pick — with the source of
+every opinion in plain sight. Our own opinions are not in the tool.
+
 ## What we are not
 
 - **Not another config format.** We don't want you to learn a new schema. We
@@ -92,7 +102,8 @@ preview, undo, and agent (MCP) access as everything else, for free.
 - **Not a lock-in.** Everything we do is a diff to a file you own. Leaving is
   `npm uninstall` and nothing else.
 - **Not opinionated about your stack.** Biome or ESLint, npm or pnpm, Next or
-  Vite — we describe your setup and offer improvements; we don't force ours.
+  Vite — we describe your setup with facts. Opinions are opt-in, attributed
+  packs you install; we never ship ours.
 
 ## The bet
 

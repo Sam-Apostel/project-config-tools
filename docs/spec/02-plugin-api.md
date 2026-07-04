@@ -192,6 +192,14 @@ model. Declarative contributions are preferred; panels are the escape hatch.
 ### 4.8 `registerMigration` — vA→vB / tool→tool
 Defined in [`04-migrations.md`](04-migrations.md); registered here.
 
+### 4.9 Opinion packs — a restricted, declarative-only plugin class
+An **opinion pack** is the most restricted plugin: it contributes *only*
+attributed recommendations (pure data, no operations, no code, no network) and
+applies them through the core's generic operations. It's the safest thing you
+can install and the mechanism behind "neutral base, installable opinions." Full
+design — facts vs. opinions, attribution/trust, conflicts — in
+[`07-opinions.md`](07-opinions.md).
+
 ## 5. Security & trust model
 
 Plugins are npm packages, so they carry npm-package trust — we are explicit

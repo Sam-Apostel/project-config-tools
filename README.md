@@ -45,8 +45,15 @@ keeping the files as the source of truth. Read the [Manifesto](MANIFESTO.md).
   not typing a name into a command. No free-typed install path.
 - **Run scripts as buttons** — every `package.json` script becomes a labeled
   button with live output. No recalling incantations.
-- **Understand your TypeScript setup** — see effective compiler options,
-  what's non-default, and get concrete "this could be improved" suggestions.
+- **Understand your TypeScript setup** — see effective compiler options and
+  what's non-default, as neutral facts. (Suggestions like "turn on `strict`"
+  come from opinion packs you install — see below — never baked in.)
+- **Neutral base, installable opinions** — out of the box the tool states only
+  *facts* (vulnerable, outdated, type-wrong, non-default). Want guidance?
+  Install an **opinion pack** attributed to someone you trust — the TypeScript
+  team, Matt Pocock, Vercel, Tanner — and its recommendations appear, labeled as
+  theirs. Stack several; see where they disagree; pick. The maintainer's taste
+  is never in the tool.
 - **Guided framework config** — e.g. add an allowed image domain to
   `next.config` through a form with inline helper docs, not by guessing the
   key shape.
