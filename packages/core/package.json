@@ -1,0 +1,17 @@
+{
+  "name": "@visual-config/core",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Headless core: project model, operations, changes, format-preserving writers, undo journal.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "diff": "^7.0.0",
+    "jsonc-parser": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/diff": "^7.0.0"
+  }
+}
