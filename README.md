@@ -196,6 +196,38 @@ pnpm typecheck    # tsc across the workspace
 pnpm format       # prettier
 ```
 
+## Extending it (plugins & opinions)
+
+Plugins are auto-discovered from your project's dependencies (any package whose
+`package.json` has a `visual-config` field or the `visual-config-plugin`
+keyword). A plugin adds operations, detectors, or **attributed opinions**:
+
+```ts
+import { definePlugin } from '@visual-config/kit';
+
+export default definePlugin({
+  id: 'my-opinions',
+  setup(ctx) {
+    ctx.registerImprovement({
+      id: 'strict',
+      applies: (project) => project.configFiles.some((f) => f.kind === 'tsconfig'),
+      suggest: () => ({
+        id: 'enable-strict',
+        title: 'Enable TypeScript `strict`',
+        detail: 'Catches many bugs at compile time.',
+        author: { name: 'You', kind: 'person', official: false },
+        apply: { operationId: 'set-tsconfig-option', input: { key: 'strict', value: true } },
+      }),
+    });
+  },
+});
+```
+
+The **base ships no opinions**. Recommendations appear only from packs you
+install, always labeled with their author — see
+[`packages/opinion-ts-strict`](packages/opinion-ts-strict) for a worked example
+and [`docs/spec/07-opinions.md`](docs/spec/07-opinions.md) for the design.
+
 ## Status & contributing
 
 Early alpha. The repo pushes directly to `main` until v1 (no PR workflow yet).

@@ -30,11 +30,18 @@ What's built and green on `main` (55 tests, typecheck + CI):
   set-tsconfig-option, set-package-field.
 - ✅ **Diagnostics** (outdated facts via the registry, semver-based).
 - ✅ **MCP server** (`visual-config mcp`) projecting every operation as a tool.
-- ✅ **Plugin system** — built-ins load as a plugin; third parties can add
-  operations + detectors (`@visual-config/kit`).
-- 🔜 Not yet: opinions loading, migrations (changelog + codemod/skill + safety),
+- ✅ **Plugin system** — built-ins load as a plugin; third parties add
+  operations + detectors (`@visual-config/kit`); plugins auto-discovered from
+  the project's dependencies (npm-first).
+- ✅ **Opinions** — neutral base (zero opinions); an installed opinion pack
+  contributes attributed recommendations rendered with author + verified/
+  community badge, applied through the Diff Sheet (example:
+  `@visual-config/opinion-ts-strict`).
+- ✅ **MCP resources** — `project://model`, `diagnostics://outdated`,
+  `tsconfig://options` alongside the tools.
+- 🔜 Not yet: migrations (changelog + codemod/skill + code-aware safety),
   `next.config` AST editing, publish flow (publint/attw), lockfile-based vulns,
-  IDE extensions. The phases below detail these.
+  IDE extensions, the hosted registry/marketplace. The phases below detail these.
 
 ---
 
