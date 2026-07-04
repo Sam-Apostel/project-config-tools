@@ -1,5 +1,5 @@
 {
-  "name": "@visual-config/mcp",
+  "name": "@apostel/visual-config-mcp",
   "version": "0.0.0",
   "type": "module",
   "description": "MCP server projecting the operation registry as agent tools.",
@@ -33,7 +33,7 @@
     }
   },
   "dependencies": {
-    "@visual-config/core": "workspace:*",
+    "@apostel/visual-config-core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.12.0"
   }
 }

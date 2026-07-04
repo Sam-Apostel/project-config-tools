@@ -8,8 +8,8 @@ import type {
   JournalEntry,
   ProjectModel,
   ScriptEntry,
-} from '@visual-config/core';
-import type { BumpAnalysis, TsconfigView } from '@visual-config/protocol';
+} from '@apostel/visual-config-core';
+import type { BumpAnalysis, TsconfigView } from '@apostel/visual-config-protocol';
 import { connect, type ServerRpc } from './rpc.js';
 
 type Section =

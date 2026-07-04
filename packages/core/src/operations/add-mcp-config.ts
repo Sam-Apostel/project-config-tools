@@ -28,7 +28,7 @@ const ALL_CLIENTS: McpClient[] = ['claude', 'cursor', 'vscode'];
 
 /**
  * Register visual-config's MCP server in the repo's agent config files, so a
- * teammate or cloud agent opening the project auto-loads `npx visual-config mcp`.
+ * teammate or cloud agent opening the project auto-loads `npx @apostel/visual-config mcp`.
  * Merges into existing files, preserving any other servers.
  */
 export const addMcpConfigOperation: Operation<AddMcpConfigInput> = {
@@ -86,7 +86,8 @@ async function planAddMcpConfig(ctx: OperationContext, input: AddMcpConfigInput)
     notes: [
       {
         level: 'info',
-        message: 'Agents that read these files will be able to run `npx visual-config mcp`.',
+        message:
+          'Agents that read these files will be able to run `npx @apostel/visual-config mcp`.',
       },
     ],
     reversible: true,

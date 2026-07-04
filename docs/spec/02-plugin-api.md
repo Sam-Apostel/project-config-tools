@@ -62,7 +62,7 @@ field / `visual-config-plugin` keyword, the ESLint/Vite-plugin mechanism). The
 ## 3. The plugin entry & context
 
 ```ts
-import { definePlugin } from '@visual-config/kit';
+import { definePlugin } from '@apostel/visual-config-kit';
 
 export default definePlugin({
   id: 'oxc',
@@ -220,7 +220,7 @@ about that and constrain them:
 - **Manifest declares intent.** A plugin’s `visual-config` manifest lists the
   files, commands, and hosts it needs; the host shows this on first load and can
   require consent for community (non-first-party) plugins.
-- **Provenance surfaced.** First-party (`@visual-config/*`) vs community is
+- **Provenance surfaced.** First-party (`@apostel/*`) vs community is
   labeled in the UI. Community plugins that register `breaking`-risk Operations
   get an extra consent gate.
 - **Capability, not honor system.** Because built-ins go through the same

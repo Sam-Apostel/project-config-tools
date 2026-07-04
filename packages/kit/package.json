@@ -1,5 +1,5 @@
 {
-  "name": "@visual-config/kit",
+  "name": "@apostel/visual-config-kit",
   "version": "0.0.0",
   "type": "module",
   "description": "Author-facing helpers for building visual-config plugins.",
@@ -33,6 +33,6 @@
     }
   },
   "dependencies": {
-    "@visual-config/core": "workspace:*"
+    "@apostel/visual-config-core": "workspace:*"
   }
 }

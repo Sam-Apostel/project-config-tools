@@ -31,12 +31,12 @@ What's built and green on `main` (55 tests, typecheck + CI):
 - ✅ **Diagnostics** (outdated facts via the registry, semver-based).
 - ✅ **MCP server** (`visual-config mcp`) projecting every operation as a tool.
 - ✅ **Plugin system** — built-ins load as a plugin; third parties add
-  operations + detectors (`@visual-config/kit`); plugins auto-discovered from
+  operations + detectors (`@apostel/visual-config-kit`); plugins auto-discovered from
   the project's dependencies (npm-first).
 - ✅ **Opinions** — neutral base (zero opinions); an installed opinion pack
   contributes attributed recommendations rendered with author + verified/
   community badge, applied through the Diff Sheet (example:
-  `@visual-config/opinion-ts-strict`).
+  `@apostel/visual-config-opinion-ts-strict`).
 - ✅ **MCP resources** — `project://model`, `diagnostics://outdated`,
   `tsconfig://options` alongside the tools.
 - 🔜 Not yet: migrations (changelog + codemod/skill + code-aware safety),
@@ -50,17 +50,17 @@ What's built and green on `main` (55 tests, typecheck + CI):
 Before fanning out Phase 0/1, build the **whole spine on the smallest feature**,
 so every layer is proven end-to-end and there's something visible fast:
 
-1. Detect the project + parse `package.json` (`@visual-config/core` + the
+1. Detect the project + parse `package.json` (`@apostel/visual-config-core` + the
    `package-json` adapter).
-2. A minimal **React** UI (`@visual-config/ui`) that lists dependencies and
-   scripts, served by the daemon over **birpc/WS** (`@visual-config/server`,
+2. A minimal **React** UI (`@apostel/visual-config-ui`) that lists dependencies and
+   scripts, served by the daemon over **birpc/WS** (`@apostel/visual-config-server`,
    `visual-config` CLI).
 3. **Run a script** as a button with streamed output.
 4. **One mutating Operation** — `add-script` — going the full route:
    `plan()` → **Diff Sheet** (format-preserving edit) → confirm → `apply()` →
    **undo**.
 
-**Exit criteria:** `npx visual-config` opens the browser, shows deps/scripts,
+**Exit criteria:** `npx @apostel/visual-config` opens the browser, shows deps/scripts,
 runs a script, and adds a script via a confirmed, reversible diff — exercising
 core → server → birpc → React UI → Change → journal all at once. Stack:
 TypeScript/ESM/Node≥20, pnpm workspaces, Vite, Vitest, React (all decided; see
@@ -98,12 +98,12 @@ minimal diff, and undo it.
 
 ---
 
-## Phase 1 — `npx visual-config`: the browser tool (first public release)
+## Phase 1 — `npx @apostel/visual-config`: the browser tool (first public release)
 
 The v0 people actually run. Lead with the dependable, high-value, low-risk
 features from the scorecard.
 
-- **`npx visual-config`** boots the local server and opens the browser (the proven
+- **`npx @apostel/visual-config`** boots the local server and opens the browser (the proven
   ESLint-Config-Inspector / Nuxt-DevTools delivery pattern), **framework-agnostic
   and with no dev server required** — an unoccupied quadrant (see
   [`PRIOR-ART.md`](PRIOR-ART.md)).
@@ -118,7 +118,7 @@ features from the scorecard.
 - **Dependency health v1** — outdated + vulnerabilities (npm audit / OSV data),
   with **safe patch/minor upgrade** buttons (major/migrate deferred to Phase 2).
 
-**Exit criteria:** a developer opens any JS/TS repo with `npx visual-config`, browses
+**Exit criteria:** a developer opens any JS/TS repo with `npx @apostel/visual-config`, browses
 and installs a package, runs a script, and safely bumps a patch-level vuln —
 all without touching a terminal command or a config file by hand.
 

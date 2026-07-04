@@ -208,7 +208,7 @@ strengths without a rewrite:
   our guarded config tools. (Users can also add it via `context_servers` in
   `settings.json`, no extension needed.)
 - **Tasks — Feasible.** `.zed/tasks.json` (also imports `.vscode/tasks.json`)
-  runs `package.json` scripts and can launch `npx visual-config`.
+  runs `package.json` scripts and can launch `npx @apostel/visual-config`.
 - **JSON schema — Feasible.** Config validation/completion via
   `json-language-server` schema associations.
 - **Embedded panel / form editor — Not possible.** The rich UI is the browser

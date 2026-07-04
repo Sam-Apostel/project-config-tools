@@ -11,7 +11,7 @@ Related: [`00-architecture.md`](00-architecture.md) · [`05-mcp-and-rpc.md`](05-
 
 ## 1. Embedding the panel
 
-Same SPA as `npx visual-config`, embedded per IDE, talking to a spawned daemon
+Same SPA as `npx @apostel/visual-config`, embedded per IDE, talking to a spawned daemon
 (spec 05 §2):
 - **VS Code** — a `WebviewView` in the sidebar/panel; `package.json` form offered
   via `CustomTextEditorProvider` at `priority: "option"` ("Reopen With"), never
@@ -47,13 +47,13 @@ Zed integration = three native surfaces:
 2. **Tasks for scripts.** Zed has a tasks system (`.zed/tasks.json`, and it
    imports `.vscode/tasks.json`). `visual-config` can generate task entries for
    `package.json` scripts (and an "Open visual-config" task that runs
-   `npx visual-config`), so scripts and launching the browser UI are one
+   `npx @apostel/visual-config`), so scripts and launching the browser UI are one
    command-palette action away — parallel to the VS Code Tasks integration.
 3. **JSON schema associations.** Zed validates JSON via `json-language-server`;
    we can ensure config files get schema validation/completion through its
    `lsp.json-language-server.settings.json.schemas` settings.
 
-**The rich UI in a Zed workflow** is `npx visual-config` in the browser next to
+**The rich UI in a Zed workflow** is `npx @apostel/visual-config` in the browser next to
 Zed (exactly as it works with any editor), launchable from a Zed task. This is a
 first-class, honest story: Zed users get the *agentic* half deeply integrated and
 the *visual* half a keystroke away — we just don’t pretend the panel embeds when

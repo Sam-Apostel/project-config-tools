@@ -1,5 +1,5 @@
 {
-  "name": "@visual-config/core",
+  "name": "@apostel/visual-config-core",
   "version": "0.0.0",
   "type": "module",
   "description": "Headless core: project model, operations, changes, format-preserving writers, undo journal.",

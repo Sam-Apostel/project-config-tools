@@ -1,5 +1,5 @@
 {
-  "name": "@visual-config/opinion-ts-strict",
+  "name": "@apostel/visual-config-opinion-ts-strict",
   "version": "0.0.0",
   "type": "module",
   "description": "Example opinion pack: recommends strict TypeScript settings. A community example, not official guidance.",
@@ -40,6 +40,6 @@
     }
   },
   "dependencies": {
-    "@visual-config/kit": "workspace:*"
+    "@apostel/visual-config-kit": "workspace:*"
   }
 }

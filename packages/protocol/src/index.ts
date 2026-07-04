@@ -9,7 +9,7 @@ import type {
   JournalEntry,
   OperationInfo,
   ProjectModel,
-} from '@visual-config/core';
+} from '@apostel/visual-config-core';
 
 /** Result of planning an operation, wrapped so the UI gets structured errors. */
 export interface PlanResult {

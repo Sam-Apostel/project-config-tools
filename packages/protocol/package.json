@@ -1,5 +1,5 @@
 {
-  "name": "@visual-config/protocol",
+  "name": "@apostel/visual-config-protocol",
   "version": "0.0.0",
   "type": "module",
   "description": "Shared RPC contract types between the daemon and the faces (no runtime).",
@@ -33,6 +33,6 @@
     }
   },
   "dependencies": {
-    "@visual-config/core": "workspace:*"
+    "@apostel/visual-config-core": "workspace:*"
   }
 }

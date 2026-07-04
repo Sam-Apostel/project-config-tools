@@ -1,5 +1,5 @@
 {
-  "name": "@visual-config/server",
+  "name": "@apostel/visual-config-server",
   "version": "0.0.0",
   "type": "module",
   "description": "The local daemon: birpc over WebSocket, static UI hosting, script tasks.",
@@ -33,8 +33,8 @@
     }
   },
   "dependencies": {
-    "@visual-config/core": "workspace:*",
-    "@visual-config/protocol": "workspace:*",
+    "@apostel/visual-config-core": "workspace:*",
+    "@apostel/visual-config-protocol": "workspace:*",
     "birpc": "^2.3.0",
     "ws": "^8.18.0"
   },

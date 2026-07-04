@@ -33,7 +33,7 @@ Running from source (see [Development](#run-it-from-source-development)):
 - 🟢 The **Diff Sheet** — every mutation previewed and confirmed, with **undo**
 - 🟢 Operations: add/remove script, install/remove/upgrade dependency, set tsconfig option, set package field
 - 🟢 **MCP server** (`visual-config mcp`) exposing the same operations to agents
-- 🟢 **Plugin system** — built-ins load as a plugin; third parties add operations + detectors (`@visual-config/kit`)
+- 🟢 **Plugin system** — built-ins load as a plugin; third parties add operations + detectors (`@apostel/visual-config-kit`)
 - 🟡 Next up: opinions, migrations (changelog + safety), more config adapters, publish flow, IDE panels
 
 Everything writes through a **format- and comment-preserving** layer, and the
@@ -97,7 +97,7 @@ keeping the files as the source of truth. Read the [Manifesto](MANIFESTO.md).
 
 ```bash
 # In any JS/TS project directory:
-npx visual-config
+npx @apostel/visual-config
 ```
 
 This opens visual-config in your browser, pointed at the current project. It reads
@@ -105,7 +105,7 @@ your real config files, presents them as a UI, and writes changes back as
 minimal diffs you confirm. Install it locally to pin a version:
 
 ```bash
-npm install -D visual-config   # then: npx visual-config  (or a "visual-config" script)
+npm install -D @apostel/visual-config   # then: npx @apostel/visual-config  (or a "visual-config" script)
 ```
 
 > [!NOTE]
@@ -138,7 +138,7 @@ shell commands:
 
 ```bash
 # Intended: run visual-config's tools as an MCP server for your agent
-npx visual-config mcp
+npx @apostel/visual-config mcp
 ```
 
 Agents call the same guardrailed operations you do — diffs, validation, undo —
@@ -172,23 +172,23 @@ Node ≥20 and pnpm.
 ```bash
 pnpm install
 pnpm build:ui                 # build the React SPA the daemon serves
-pnpm --filter visual-config exec tsx src/bin.ts --cwd /path/to/your/project
+pnpm --filter @apostel/visual-config exec tsx src/bin.ts --cwd /path/to/your/project
 # → opens http://127.0.0.1:<port> in your browser
 
 # Or the MCP server for an agent (stdio):
-pnpm --filter visual-config exec tsx src/bin.ts mcp --cwd /path/to/your/project
+pnpm --filter @apostel/visual-config exec tsx src/bin.ts mcp --cwd /path/to/your/project
 ```
 
 Workspace layout (see [`docs/spec/00-architecture.md`](docs/spec/00-architecture.md)):
 
-| Package                   | Role                                                                                                     |
-| ------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `@visual-config/core`     | headless engine: project model, operations, Change/undo, format-preserving writers, registry/diagnostics |
-| `@visual-config/protocol` | shared birpc contract (types only)                                                                       |
-| `@visual-config/server`   | local daemon (HTTP static SPA + WebSocket birpc + script tasks)                                          |
-| `@visual-config/ui`       | the React SPA (browser + future IDE webview)                                                             |
-| `@visual-config/mcp`      | MCP server projecting operations as agent tools                                                          |
-| `visual-config` (cli)     | the `visual-config` bin                                                                                  |
+| Package                           | Role                                                                                                     |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `@apostel/visual-config-core`     | headless engine: project model, operations, Change/undo, format-preserving writers, registry/diagnostics |
+| `@apostel/visual-config-protocol` | shared birpc contract (types only)                                                                       |
+| `@apostel/visual-config-server`   | local daemon (HTTP static SPA + WebSocket birpc + script tasks)                                          |
+| `@apostel/visual-config-ui`       | the React SPA (browser + future IDE webview)                                                             |
+| `@apostel/visual-config-mcp`      | MCP server projecting operations as agent tools                                                          |
+| `visual-config` (cli)             | the `visual-config` bin                                                                                  |
 
 ```bash
 pnpm test         # unit + daemon integration tests
@@ -203,7 +203,7 @@ Plugins are auto-discovered from your project's dependencies (any package whose
 keyword). A plugin adds operations, detectors, or **attributed opinions**:
 
 ```ts
-import { definePlugin } from '@visual-config/kit';
+import { definePlugin } from '@apostel/visual-config-kit';
 
 export default definePlugin({
   id: 'my-opinions',
@@ -237,8 +237,10 @@ lands on `main`, the [release workflow](.github/workflows/release.yml) opens a
 each `CHANGELOG.md`. Merging that PR publishes all packages to npm and cuts a matching
 **GitHub Release** with the same notes.
 
-One-time setup by a maintainer: create the `@visual-config` npm org, add an
-automation `NPM_TOKEN` to the repo secrets, and `npm login`. Nothing else is manual.
+Every package publishes under the [`@apostel`](https://www.npmjs.com/org/apostel)
+scope. One-time setup by a maintainer: add an automation `NPM_TOKEN` (from an npm
+account with publish rights to the scope) as a repo Actions secret. Nothing else is
+manual.
 
 ## Status & contributing
 

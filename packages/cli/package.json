@@ -1,5 +1,5 @@
 {
-  "name": "visual-config",
+  "name": "@apostel/visual-config",
   "version": "0.0.0",
   "type": "module",
   "description": "A visual interface for your project's config files.",
@@ -29,9 +29,9 @@
     }
   },
   "dependencies": {
-    "@visual-config/core": "workspace:*",
-    "@visual-config/mcp": "workspace:*",
-    "@visual-config/server": "workspace:*",
-    "@visual-config/ui": "workspace:*"
+    "@apostel/visual-config-core": "workspace:*",
+    "@apostel/visual-config-mcp": "workspace:*",
+    "@apostel/visual-config-server": "workspace:*",
+    "@apostel/visual-config-ui": "workspace:*"
   }
 }

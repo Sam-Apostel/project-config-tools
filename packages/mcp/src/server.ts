@@ -8,7 +8,7 @@ import {
   type Resource,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import type { Engine } from '@visual-config/core';
+import type { Engine } from '@apostel/visual-config-core';
 
 function toolName(operationId: string): string {
   return `plan_${operationId.replace(/-/g, '_')}`;

@@ -3,8 +3,8 @@ import { resolve, dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
-import { openProject, discoverPlugins } from '@visual-config/core';
-import { startDaemon } from '@visual-config/server';
+import { openProject, discoverPlugins } from '@apostel/visual-config-core';
+import { startDaemon } from '@apostel/visual-config-server';
 
 interface CliArgs {
   command?: string;
@@ -41,7 +41,7 @@ function resolveUiDir(override?: string): string | undefined {
   }
   try {
     const require = createRequire(import.meta.url);
-    const pkgPath = require.resolve('@visual-config/ui/package.json');
+    const pkgPath = require.resolve('@apostel/visual-config-ui/package.json');
     const dir = join(dirname(pkgPath), 'dist');
     return existsSync(join(dir, 'index.html')) ? dir : undefined;
   } catch {
@@ -67,7 +67,7 @@ async function main(): Promise<void> {
     const root = resolve(args.cwd ?? process.cwd());
     const plugins = args.plugins ? await discoverPlugins(root) : [];
     const engine = await openProject(root, { plugins });
-    const { startStdioMcpServer } = await import('@visual-config/mcp');
+    const { startStdioMcpServer } = await import('@apostel/visual-config-mcp');
     await startStdioMcpServer(engine);
     return;
   }
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
     if (result.ok) {
       console.log(`\n  Registered the visual-config MCP server for: ${clients.join(', ')}`);
       for (const edit of change.edits) console.log(`    ${edit.path}`);
-      console.log('\n  Agents opening this repo can now run `npx visual-config mcp`.\n');
+      console.log('\n  Agents opening this repo can now run `npx @apostel/visual-config mcp`.\n');
     } else {
       console.error(`Failed: ${result.errors.join('; ')}`);
       process.exit(1);
