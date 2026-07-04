@@ -144,6 +144,15 @@ export function App(): JSX.Element {
     else setError(result.error ?? 'Could not plan the change.');
   }, []);
 
+  const planSetField = useCallback(async (field: string, value: string) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('set-package-field', { field, value });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the change.');
+  }, []);
+
   if (error && !project) return <div className="status">⚠ {error}</div>;
   if (!rpc || !project) return <div className="status">Connecting to the daemon…</div>;
 
@@ -201,7 +210,9 @@ export function App(): JSX.Element {
 
       <main className="main">
         {error && <div className="error-banner">{error}</div>}
-        {section === 'overview' && <Overview project={project} outdatedCount={outdatedCount} />}
+        {section === 'overview' && (
+          <Overview project={project} outdatedCount={outdatedCount} onSetField={planSetField} />
+        )}
         {section === 'dependencies' && (
           <Dependencies
             deps={deps}
@@ -249,21 +260,76 @@ function RailButton(props: {
   );
 }
 
-function Overview(props: { project: ProjectModel; outdatedCount: number }): JSX.Element {
-  const { project, outdatedCount } = props;
+function EditableRow(props: {
+  label: string;
+  field: string;
+  value?: string;
+  onSet: (field: string, value: string) => void;
+}): JSX.Element {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(props.value ?? '');
+  if (editing) {
+    return (
+      <form
+        className="row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (draft !== (props.value ?? '')) props.onSet(props.field, draft);
+          setEditing(false);
+        }}
+      >
+        <span className="grow">{props.label}</span>
+        <input
+          className="field"
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <button className="btn primary small" type="submit">
+          Save
+        </button>
+        <button className="btn small" type="button" onClick={() => setEditing(false)}>
+          Cancel
+        </button>
+      </form>
+    );
+  }
+  return (
+    <div className="row">
+      <span className="grow">{props.label}</span>
+      <span className="name">{props.value ?? '—'}</span>
+      <button
+        className="btn small"
+        onClick={() => {
+          setDraft(props.value ?? '');
+          setEditing(true);
+        }}
+      >
+        Edit
+      </button>
+    </div>
+  );
+}
+
+function Overview(props: {
+  project: ProjectModel;
+  outdatedCount: number;
+  onSetField: (field: string, value: string) => void;
+}): JSX.Element {
+  const { project, outdatedCount, onSetField } = props;
   return (
     <>
       <h2 className="section-title">Overview</h2>
-      <p className="section-sub">A glance at this project's configuration.</p>
+      <p className="section-sub">A glance at this project's configuration. Fields are editable.</p>
       <div className="card">
-        <div className="row">
-          <span className="grow">Name</span>
-          <span className="name">{project.name ?? '—'}</span>
-        </div>
-        <div className="row">
-          <span className="grow">Version</span>
-          <span className="name">{project.version ?? '—'}</span>
-        </div>
+        <EditableRow label="Name" field="name" value={project.name} onSet={onSetField} />
+        <EditableRow label="Version" field="version" value={project.version} onSet={onSetField} />
+        <EditableRow
+          label="Description"
+          field="description"
+          value={project.description}
+          onSet={onSetField}
+        />
         <div className="row">
           <span className="grow">Package manager</span>
           <span className="name">{project.packageManager}</span>

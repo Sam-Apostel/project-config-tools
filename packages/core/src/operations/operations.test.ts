@@ -91,6 +91,26 @@ describe('remove-script', () => {
   });
 });
 
+describe('set-package-field', () => {
+  it('sets an allowed metadata field', async () => {
+    const { engine, fs } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    const change = await engine.plan('set-package-field', {
+      field: 'description',
+      value: 'a demo',
+    });
+    expect(change.risk).toBe('safe');
+    await engine.apply(change.id);
+    expect(JSON.parse(await fs.readFile('/proj/package.json')).description).toBe('a demo');
+  });
+
+  it('rejects a non-allowed field (e.g. dependencies)', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    await expect(
+      engine.plan('set-package-field', { field: 'dependencies', value: {} }),
+    ).rejects.toThrow(/not an allowed/);
+  });
+});
+
 describe('set-tsconfig-option', () => {
   it('sets a compilerOptions value preserving comments', async () => {
     const tsconfig =

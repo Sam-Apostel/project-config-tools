@@ -154,6 +154,7 @@ export interface ProjectModel {
   packageManager: PackageManager;
   name?: string;
   version?: string;
+  description?: string;
   private?: boolean;
   scripts: ScriptEntry[];
   dependencies: DependencyEntry[];

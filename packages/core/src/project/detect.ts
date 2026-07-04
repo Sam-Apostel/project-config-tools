@@ -66,6 +66,7 @@ function normalizeWorkspaces(workspaces: unknown): string[] {
 interface RawPackageJson {
   name?: string;
   version?: string;
+  description?: string;
   private?: boolean;
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
@@ -118,6 +119,7 @@ export async function detectProject(fs: FileSystem, root: string): Promise<Proje
     packageManager: await detectPackageManager(fs, root),
     name: pkg.name,
     version: pkg.version,
+    description: pkg.description,
     private: pkg.private,
     scripts,
     dependencies,
