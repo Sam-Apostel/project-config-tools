@@ -26,8 +26,8 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Build UI
-        run: pnpm build:ui
+      - name: Build (all packages, as published)
+        run: pnpm build
 
       - name: Format check
         run: pnpm format:check

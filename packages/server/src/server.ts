@@ -6,8 +6,12 @@ import {
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { createBirpc, type BirpcReturn } from 'birpc';
-import type { Engine } from '@visual-config/core';
-import type { ClientFunctions, FaceBootstrap, ServerFunctions } from '@visual-config/protocol';
+import type { Engine } from '@apostel/visual-config-core';
+import type {
+  ClientFunctions,
+  FaceBootstrap,
+  ServerFunctions,
+} from '@apostel/visual-config-protocol';
 import { TaskManager } from './tasks.js';
 import { serveStatic } from './static.js';
 

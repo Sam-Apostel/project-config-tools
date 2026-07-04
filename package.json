@@ -13,12 +13,17 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "pnpm --filter visual-config dev",
-    "build:ui": "pnpm --filter @visual-config/ui build",
+    "dev": "pnpm --filter @apostel/visual-config dev",
+    "build": "pnpm -r run build",
+    "build:ui": "pnpm --filter @apostel/visual-config-ui build",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "changeset": "changeset",
+    "release": "pnpm build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.11",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^22.10.2",
     "playwright-core": "^1.61.1",

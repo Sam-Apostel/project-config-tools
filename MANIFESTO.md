@@ -68,7 +68,7 @@ machine, not a magic wand. You always know what changed, why, and how to undo
 it — whether the actor was you or an agent.
 
 **6. The tool meets you where you work.**
-It starts as `npx visual-config` — zero install, opens in a browser, works on any
+It starts as `npx @apostel/visual-config` — zero install, opens in a browser, works on any
 project. It grows into IDE panels — VS Code, JetBrains — where your config
 lives beside your code and, if you want a calmer file tree, the raw files can be
 tidied out of the way using the IDE's own native features (they stay on disk,
@@ -113,5 +113,5 @@ make them through the wrong medium. Give configuration a real surface —
 visible, safe, reversible, documented, and equally usable by humans and
 agents — and a whole category of daily friction and drift disappears.
 
-If we're right, `npx visual-config` becomes the first thing you run in a new repo, and
+If we're right, `npx @apostel/visual-config` becomes the first thing you run in a new repo, and
 the last time you open `tsconfig.json` by hand is the day you install it.

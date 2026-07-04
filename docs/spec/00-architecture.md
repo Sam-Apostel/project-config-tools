@@ -75,7 +75,7 @@ Pure TypeScript library, no transport code. Owns:
 ### 2.2 Plugin host
 Loads plugins and lets them register contributions against typed **contribution
 points**. The core’s own features are packaged as first-party plugins
-(`@visual-config/core`, `@visual-config/typescript`, `@visual-config/next`, …).
+(`@apostel/visual-config-core`, `@apostel/typescript`, `@apostel/next`, …).
 Full design in [`02-plugin-api.md`](02-plugin-api.md).
 
 ### 2.3 Daemon
@@ -83,13 +83,13 @@ A single local Node process, one per project, that hosts the core + plugin host
 and exposes them over RPC. Responsibilities: RPC routing, the per-session undo
 journal, and **security** — bind to `127.0.0.1`, validate `Origin`, require a
 per-session token (following the MCP local-server hardening guidance). The
-daemon is what `npx visual-config` starts and what an IDE extension spawns as a
+daemon is what `npx @apostel/visual-config` starts and what an IDE extension spawns as a
 child process.
 
 ### 2.4 Faces
 Thin clients. They render the UI and marshal user intent into RPC calls; they
 never contain config logic.
-- **Browser UI (`npx visual-config`)** — daemon serves a prebuilt SPA (sirv-style
+- **Browser UI (`npx @apostel/visual-config`)** — daemon serves a prebuilt SPA (sirv-style
   static host) + a birpc-over-WebSocket channel. This is the Nuxt-DevTools
   *standalone* shape (own server + birpc + browser client).
 - **VS Code** — a Webview View reuses the *same* SPA. Two options (see
@@ -122,7 +122,7 @@ receives the same Change as structured JSON. See
 ## 4. Data flow: installing a package (worked example)
 
 1. UI calls RPC `operation.plan("install-package", { name: "zod", range: "^3" })`.
-2. Core routes to the `install-package` Operation (from `@visual-config/npm`).
+2. Core routes to the `install-package` Operation (from `@apostel/npm`).
    It resolves the version, computes the `package.json` edit, and returns a
    **Change** (summary + diff + the `npm install` command it will run).
 3. UI renders the Change in the Diff Sheet. User clicks **Confirm**.
@@ -150,13 +150,13 @@ receives the same Change as structured JSON. See
 
 ```
 packages/
-  core/        @visual-config/core     — project model, operations, changes, writers, undo (no transport)
-  adapters/    @visual-config/adapter-*  — package-json, tsconfig, … (first-party plugins)
-  server/      @visual-config/server   — the daemon: birpc/WS, session, auth/origin guard
+  core/        @apostel/visual-config-core     — project model, operations, changes, writers, undo (no transport)
+  adapters/    @apostel/adapter-*  — package-json, tsconfig, … (first-party plugins)
+  server/      @apostel/visual-config-server   — the daemon: birpc/WS, session, auth/origin guard
   cli/         visual-config           — the bin: `visual-config` (serve+open browser), `visual-config mcp`
-  mcp/         @visual-config/mcp      — MCP server projecting the operation registry
-  ui/          @visual-config/ui       — the React SPA (browser + IDE webview)
-  kit/         @visual-config/kit      — definePlugin + typed contribution API for plugin authors
+  mcp/         @apostel/visual-config-mcp      — MCP server projecting the operation registry
+  ui/          @apostel/visual-config-ui       — the React SPA (browser + IDE webview)
+  kit/         @apostel/visual-config-kit      — definePlugin + typed contribution API for plugin authors
 ```
 `core` never imports a transport; `server`/`mcp`/`cli` depend on `core`; `ui`
 depends only on the shared RPC/types. This is what keeps every face thin.

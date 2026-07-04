@@ -1,11 +1,36 @@
 {
-  "name": "@visual-config/core",
+  "name": "@apostel/visual-config-core",
   "version": "0.0.0",
   "type": "module",
   "description": "Headless core: project model, operations, changes, format-preserving writers, undo journal.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sam-apostel/project-config-tools.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/sam-apostel/project-config-tools#readme",
+  "bugs": "https://github.com/sam-apostel/project-config-tools/issues",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
   },
   "dependencies": {
     "diff": "^7.0.0",

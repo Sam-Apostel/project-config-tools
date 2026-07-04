@@ -1,4 +1,4 @@
-import { definePlugin, type ProjectModel } from '@visual-config/kit';
+import { definePlugin, type ProjectModel } from '@apostel/visual-config-kit';
 
 /**
  * An example opinion pack. It demonstrates the shape of an attributed

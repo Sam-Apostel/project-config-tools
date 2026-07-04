@@ -1,5 +1,9 @@
 import { createBirpc, type BirpcReturn } from 'birpc';
-import type { ClientFunctions, FaceBootstrap, ServerFunctions } from '@visual-config/protocol';
+import type {
+  ClientFunctions,
+  FaceBootstrap,
+  ServerFunctions,
+} from '@apostel/visual-config-protocol';
 
 export type ServerRpc = BirpcReturn<ServerFunctions, ClientFunctions>;
 
@@ -13,7 +17,7 @@ export function connect(clientFunctions: ClientFunctions): Promise<ServerRpc> {
     const bootstrap = getBootstrap();
     if (!bootstrap) {
       rejectPromise(
-        new Error('No daemon connection info. Launch this UI with `npx visual-config`.'),
+        new Error('No daemon connection info. Launch this UI with `npx @apostel/visual-config`.'),
       );
       return;
     }

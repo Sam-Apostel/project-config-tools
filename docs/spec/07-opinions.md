@@ -137,7 +137,7 @@ worth a human call):
   interpretation of Kent C. Dodds’ public guidance — not by him"*, never as
   official. `official: false`, distinct styling.
 - **Namespacing convention.** Encourage authors to own their pack under their
-  scope; a first-party curated index (`@visual-config/opinions-*`) may exist but
+  scope; a first-party curated index (`@apostel/opinions-*`) may exist but
   only as verified mirrors or clearly-labeled community sets — never
   impersonation.
 - **No editorial ranking by us.** When we present available packs to install

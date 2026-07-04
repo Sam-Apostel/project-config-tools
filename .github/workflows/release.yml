@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # push the Version Packages PR, tags, and GitHub Releases
+  pull-requests: write # open/update the Version Packages PR
+  id-token: write # reserved for npm provenance (see NPM_CONFIG_PROVENANCE below)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # changesets needs full history to compute changelogs
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # Guard: never publish something that doesn't typecheck, test, or build.
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+      # Opens/updates the "Version Packages" PR when changesets are pending;
+      # when that PR is merged (no pending changesets), runs `release` to publish
+      # to npm and cut a GitHub Release per version.
+      - name: Create Release PR or publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          publish: pnpm release
+          commit: 'chore(release): version packages'
+          title: 'chore(release): version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

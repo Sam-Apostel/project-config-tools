@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import type { PackageManager } from '@visual-config/core';
+import type { PackageManager } from '@apostel/visual-config-core';
 
 export interface TaskEvents {
   onOutput(taskId: string, chunk: string): void;

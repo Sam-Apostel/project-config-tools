@@ -10,7 +10,7 @@
 
 **Name: `visual-config`.** This is a descriptive package name, not a brand — it
 tells you exactly what the tool is: a visual interface for your project config.
-It is intentionally plain (`npx visual-config`), lowercase, and unadorned. We
+It is intentionally plain (`npx @apostel/visual-config`), lowercase, and unadorned. We
 are not building an identity to defend; we are naming a utility.
 
 - **npm / binary name:** `visual-config` (availability verified as free at time

@@ -1,13 +1,38 @@
 {
-  "name": "@visual-config/protocol",
+  "name": "@apostel/visual-config-protocol",
   "version": "0.0.0",
   "type": "module",
   "description": "Shared RPC contract types between the daemon and the faces (no runtime).",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sam-apostel/project-config-tools.git",
+    "directory": "packages/protocol"
+  },
+  "homepage": "https://github.com/sam-apostel/project-config-tools#readme",
+  "bugs": "https://github.com/sam-apostel/project-config-tools/issues",
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
   "dependencies": {
-    "@visual-config/core": "workspace:*"
+    "@apostel/visual-config-core": "workspace:*"
   }
 }

@@ -8,8 +8,8 @@ import {
   addScriptOperation,
   type CommandRunner,
   type RunResult,
-} from '@visual-config/core';
-import type { ClientFunctions, ServerFunctions } from '@visual-config/protocol';
+} from '@apostel/visual-config-core';
+import type { ClientFunctions, ServerFunctions } from '@apostel/visual-config-protocol';
 import { startDaemon, type Daemon } from './server.js';
 
 class NoopRunner implements CommandRunner {

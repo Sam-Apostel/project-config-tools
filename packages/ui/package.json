@@ -1,14 +1,26 @@
 {
-  "name": "@visual-config/ui",
+  "name": "@apostel/visual-config-ui",
   "version": "0.0.0",
-  "private": true,
   "type": "module",
   "description": "The React SPA served in the browser and embedded in IDE webviews.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sam-apostel/project-config-tools.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/sam-apostel/project-config-tools#readme",
+  "bugs": "https://github.com/sam-apostel/project-config-tools/issues",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "birpc": "^2.3.0",
@@ -18,8 +30,8 @@
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@visual-config/core": "workspace:*",
-    "@visual-config/protocol": "workspace:*",
+    "@apostel/visual-config-core": "workspace:*",
+    "@apostel/visual-config-protocol": "workspace:*",
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^5.4.11"
   }

@@ -1,4 +1,4 @@
-import type { Plugin } from '@visual-config/core';
+import type { Plugin } from '@apostel/visual-config-core';
 
 export type {
   Plugin,
@@ -9,7 +9,7 @@ export type {
   Change,
   ProjectModel,
   DetectedTool,
-} from '@visual-config/core';
+} from '@apostel/visual-config-core';
 
 /**
  * Define a visual-config plugin. Identity function that pins the type so plugin

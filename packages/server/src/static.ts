@@ -1,7 +1,7 @@
 import { readFile, stat } from 'node:fs/promises';
 import { join, extname, normalize } from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { FaceBootstrap } from '@visual-config/protocol';
+import type { FaceBootstrap } from '@apostel/visual-config-protocol';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',

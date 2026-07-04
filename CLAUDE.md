@@ -13,7 +13,7 @@ technical specs the code follows are in [`docs/spec/`](docs/spec/).
 **One headless core, many thin faces. Everything is an Operation that yields a
 previewable, reversible Change. Everything is a plugin, including built-ins.**
 
-- The **core** (`@visual-config/core`) knows nothing about HTTP/DOM/MCP. It
+- The **core** (`@apostel/visual-config-core`) knows nothing about HTTP/DOM/MCP. It
   exposes `Operation`s (each `plan()`s a `Change`) and a `ProjectModel` read from
   the real files.
 - The **daemon**, **UI**, and **MCP server** are thin transports over the core.
@@ -36,15 +36,15 @@ previewable, reversible Change. Everything is a plugin, including built-ins.**
 
 ## Packages (pnpm workspace under `packages/`)
 
-| Package                   | Role                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------ |
-| `@visual-config/core`     | engine: project model, operations, Change/undo, writers, registry/diagnostics, plugin host |
-| `@visual-config/protocol` | shared birpc contract (types only)                                                         |
-| `@visual-config/server`   | daemon: HTTP static SPA + WebSocket birpc + script tasks                                   |
-| `@visual-config/ui`       | React SPA (browser + future IDE webview)                                                   |
-| `@visual-config/mcp`      | MCP server projecting operations as agent tools                                            |
-| `@visual-config/kit`      | author-facing `definePlugin` + types                                                       |
-| `visual-config` (cli)     | the `visual-config` bin                                                                    |
+| Package                           | Role                                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------ |
+| `@apostel/visual-config-core`     | engine: project model, operations, Change/undo, writers, registry/diagnostics, plugin host |
+| `@apostel/visual-config-protocol` | shared birpc contract (types only)                                                         |
+| `@apostel/visual-config-server`   | daemon: HTTP static SPA + WebSocket birpc + script tasks                                   |
+| `@apostel/visual-config-ui`       | React SPA (browser + future IDE webview)                                                   |
+| `@apostel/visual-config-mcp`      | MCP server projecting operations as agent tools                                            |
+| `@apostel/visual-config-kit`      | author-facing `definePlugin` + types                                                       |
+| `visual-config` (cli)             | the `visual-config` bin                                                                    |
 
 ## Commands
 
@@ -55,8 +55,8 @@ pnpm typecheck     # tsc -p tsconfig.json across the workspace
 pnpm format        # prettier --write (code only; docs are excluded)
 pnpm build:ui      # build the SPA the daemon serves
 # run against a project:
-pnpm --filter visual-config exec tsx src/bin.ts --cwd /path/to/project
-pnpm --filter visual-config exec tsx src/bin.ts mcp --cwd /path/to/project
+pnpm --filter @apostel/visual-config exec tsx src/bin.ts --cwd /path/to/project
+pnpm --filter @apostel/visual-config exec tsx src/bin.ts mcp --cwd /path/to/project
 ```
 
 ## Conventions
@@ -72,7 +72,7 @@ pnpm --filter visual-config exec tsx src/bin.ts mcp --cwd /path/to/project
 - Add a new **operation**: implement `Operation` in `core/src/operations/`, add
   it to `builtinOperations` in `core/src/index.ts`, and test it. It then appears
   automatically in the UI Diff-Sheet flow and as an MCP `plan_*` tool.
-- Add a **plugin**: `definePlugin({ id, setup(ctx) })` from `@visual-config/kit`;
+- Add a **plugin**: `definePlugin({ id, setup(ctx) })` from `@apostel/visual-config-kit`;
   register operations/detectors on `ctx`.
 
 ## Verifying UI/daemon changes end-to-end
