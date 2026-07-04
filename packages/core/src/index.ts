@@ -44,6 +44,7 @@ export {
   type RunResult,
 } from './runner.js';
 export { detectProject } from './project/detect.js';
+export { discoverPlugins } from './discover.js';
 export { setJsonProperty, removeJsonProperty } from './json/edit.js';
 export { detectFormatting } from './json/format.js';
 export { makeUnifiedDiff } from './diff.js';
@@ -66,7 +67,14 @@ export {
 } from './diagnostics.js';
 
 export { PLUGIN_API_VERSION } from './plugin.js';
-export type { Plugin, PluginContext, Detector } from './plugin.js';
+export type {
+  Plugin,
+  PluginContext,
+  Detector,
+  Improvement,
+  ImprovementRule,
+  OpinionAuthor,
+} from './plugin.js';
 
 /** The built-in (first-party) operations, defined once. */
 export const builtinOperations: Operation<unknown>[] = [

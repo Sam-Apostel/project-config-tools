@@ -3,7 +3,7 @@ import { resolve, dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
-import { openProject } from '@visual-config/core';
+import { openProject, discoverPlugins } from '@visual-config/core';
 import { startDaemon } from '@visual-config/server';
 
 interface CliArgs {
@@ -13,14 +13,16 @@ interface CliArgs {
   port?: number;
   uiDir?: string;
   open: boolean;
+  plugins: boolean;
 }
 
 function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { open: true };
+  const args: CliArgs = { open: true, plugins: true };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (!arg) continue;
     if (arg === '--no-open') args.open = false;
+    else if (arg === '--no-plugins') args.plugins = false;
     else if (arg === '--cwd') args.cwd = argv[++i];
     else if (arg === '--host') args.host = argv[++i];
     else if (arg === '--port') args.port = Number(argv[++i]);
@@ -61,14 +63,16 @@ async function main(): Promise<void> {
   if (args.command === 'mcp') {
     // stdio is the MCP protocol channel — do not write to stdout here.
     const root = resolve(args.cwd ?? process.cwd());
-    const engine = await openProject(root);
+    const plugins = args.plugins ? await discoverPlugins(root) : [];
+    const engine = await openProject(root, { plugins });
     const { startStdioMcpServer } = await import('@visual-config/mcp');
     await startStdioMcpServer(engine);
     return;
   }
 
   const root = resolve(args.cwd ?? process.cwd());
-  const engine = await openProject(root);
+  const plugins = args.plugins ? await discoverPlugins(root) : [];
+  const engine = await openProject(root, { plugins });
   const uiDir = resolveUiDir(args.uiDir);
   const daemon = await startDaemon({ engine, uiDir, host: args.host, port: args.port });
   const project = engine.getProject();
@@ -76,6 +80,9 @@ async function main(): Promise<void> {
   console.log('');
   console.log(`  visual-config  →  ${daemon.url}`);
   console.log(`  project: ${project.name ?? root}  (${project.packageManager})`);
+  if (plugins.length > 0) {
+    console.log(`  plugins: ${plugins.map((p) => p.id).join(', ')}`);
+  }
   if (!uiDir) {
     console.log('  note: no UI build found — run `pnpm build:ui`. Serving RPC only for now.');
   }

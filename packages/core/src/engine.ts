@@ -17,7 +17,14 @@ import { NodeCommandRunner, type CommandRunner, type RunOptions } from './runner
 import { NpmRegistry, type Registry } from './registry/npm.js';
 import { searchCatalog, type CatalogQuery, type CatalogResult } from './catalog.js';
 import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
-import { PLUGIN_API_VERSION, type Detector, type Plugin, type PluginContext } from './plugin.js';
+import {
+  PLUGIN_API_VERSION,
+  type Detector,
+  type Improvement,
+  type ImprovementRule,
+  type Plugin,
+  type PluginContext,
+} from './plugin.js';
 
 export interface EngineDeps {
   root: string;
@@ -41,6 +48,7 @@ export class Engine {
   private journal = new Journal();
   private pending = new Map<string, Change>();
   private detectors: Detector[] = [];
+  private improvementRules: ImprovementRule[] = [];
   private changeSeq = 0;
   private journalSeq = 0;
   private project!: ProjectModel;
@@ -74,6 +82,7 @@ export class Engine {
         project: this.project,
         registerOperation: (op) => this.registry.register(op),
         registerDetector: (detector) => this.detectors.push(detector),
+        registerImprovement: (rule) => this.improvementRules.push(rule),
         log: () => undefined,
       };
       await plugin.setup(context);
@@ -115,6 +124,22 @@ export class Engine {
   /** Compute fact-based diagnostics (outdated deps, …). */
   getDiagnostics(): Promise<Diagnostics> {
     return computeDiagnostics(this.project, this.npm);
+  }
+
+  /**
+   * Attributed recommendations from installed opinion packs. The base ships
+   * none — this is empty unless an opinion plugin registered rules.
+   */
+  getImprovements(): Improvement[] {
+    const out: Improvement[] = [];
+    for (const rule of this.improvementRules) {
+      try {
+        if (rule.applies(this.project)) out.push(rule.suggest(this.project));
+      } catch {
+        /* a bad rule must not sink the rest */
+      }
+    }
+    return out;
   }
 
   /** The compilerOptions this project's tsconfig.json literally sets (owned view). */

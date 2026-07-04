@@ -4,6 +4,7 @@ import type {
   Change,
   DependencyEntry,
   Diagnostic,
+  Improvement,
   JournalEntry,
   ProjectModel,
   ScriptEntry,
@@ -11,7 +12,8 @@ import type {
 import type { TsconfigView } from '@visual-config/protocol';
 import { connect, type ServerRpc } from './rpc.js';
 
-type Section = 'overview' | 'dependencies' | 'catalog' | 'typescript' | 'scripts' | 'history';
+type Section =
+  'overview' | 'suggestions' | 'dependencies' | 'catalog' | 'typescript' | 'scripts' | 'history';
 
 interface TaskRun {
   taskId: string;
@@ -32,6 +34,7 @@ export function App(): JSX.Element {
   const [runs, setRuns] = useState<TaskRun[]>([]);
   const [outdated, setOutdated] = useState<OutdatedMap>(new Map());
   const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
+  const [improvements, setImprovements] = useState<Improvement[]>([]);
   const rpcRef = useRef<ServerRpc | null>(null);
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export function App(): JSX.Element {
         setProject(await connection.getProject());
         setJournal(await connection.listJournal());
         setTsconfig(await connection.getTsconfig());
+        setImprovements(await connection.getImprovements());
         // Diagnostics hit the network; load them without blocking the UI.
         connection
           .getDiagnostics()
@@ -85,6 +89,19 @@ export function App(): JSX.Element {
     if (!connection) return;
     setJournal(await connection.listJournal());
     setTsconfig(await connection.getTsconfig());
+    setImprovements(await connection.getImprovements());
+  }, []);
+
+  const applyImprovement = useCallback(async (improvement: Improvement) => {
+    const connection = rpcRef.current;
+    if (!connection || !improvement.apply) return;
+    setError(null);
+    const result = await connection.planOperation(
+      improvement.apply.operationId,
+      improvement.apply.input,
+    );
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the change.');
   }, []);
 
   const planSetTsconfig = useCallback(async (key: string, value: unknown) => {
@@ -183,6 +200,7 @@ export function App(): JSX.Element {
   const deps = project.dependencies;
   const counts: Record<Section, number> = {
     overview: 0,
+    suggestions: improvements.length,
     dependencies: deps.length,
     catalog: 0,
     typescript: 0,
@@ -208,6 +226,14 @@ export function App(): JSX.Element {
           active={section === 'overview'}
           onClick={() => setSection('overview')}
         />
+        {improvements.length > 0 && (
+          <RailButton
+            label="Suggestions"
+            count={improvements.length}
+            active={section === 'suggestions'}
+            onClick={() => setSection('suggestions')}
+          />
+        )}
         <RailButton
           label="Dependencies"
           count={counts.dependencies}
@@ -244,6 +270,9 @@ export function App(): JSX.Element {
         {error && <div className="error-banner">{error}</div>}
         {section === 'overview' && (
           <Overview project={project} outdatedCount={outdatedCount} onSetField={planSetField} />
+        )}
+        {section === 'suggestions' && (
+          <Suggestions improvements={improvements} onApply={applyImprovement} />
         )}
         {section === 'dependencies' && (
           <Dependencies
@@ -350,6 +379,52 @@ function EditableRow(props: {
         Edit
       </button>
     </div>
+  );
+}
+
+function Suggestions(props: {
+  improvements: Improvement[];
+  onApply: (improvement: Improvement) => void;
+}): JSX.Element {
+  return (
+    <>
+      <h2 className="section-title">Suggestions</h2>
+      <p className="section-sub">
+        Recommendations from the opinion packs you installed — always attributed. The base tool
+        ships none of these; these are someone's opinion, shown as theirs.
+      </p>
+      <div className="card">
+        {props.improvements.map((imp) => (
+          <div className="row" key={imp.id}>
+            <div className="grow">
+              <div className="name">{imp.title}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{imp.detail}</div>
+              {imp.docUrl && (
+                <a href={imp.docUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>
+                  docs
+                </a>
+              )}
+            </div>
+            <span className="badge" title={imp.author.url}>
+              via {imp.author.name}
+            </span>
+            {imp.author.official ? (
+              <span className="badge risk-safe">verified</span>
+            ) : (
+              <span className="badge">community</span>
+            )}
+            {imp.apply && (
+              <button className="btn primary small" onClick={() => props.onApply(imp)}>
+                Apply…
+              </button>
+            )}
+          </div>
+        ))}
+        {props.improvements.length === 0 && (
+          <div className="empty">No opinion packs installed — the base stays neutral.</div>
+        )}
+      </div>
+    </>
   );
 }
 

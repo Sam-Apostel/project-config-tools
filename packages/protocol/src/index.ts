@@ -4,6 +4,7 @@ import type {
   CatalogResult,
   Change,
   Diagnostics,
+  Improvement,
   JournalEntry,
   OperationInfo,
   ProjectModel,
@@ -35,6 +36,7 @@ export interface ServerFunctions {
   searchCatalog(query: CatalogQuery): Promise<CatalogResult>;
   getDiagnostics(): Promise<Diagnostics>;
   getTsconfig(): Promise<TsconfigView>;
+  getImprovements(): Promise<Improvement[]>;
 }
 
 export interface TsconfigView {
@@ -64,4 +66,5 @@ export type {
   CatalogQuery,
   CatalogResult,
   Diagnostics,
+  Improvement,
 };

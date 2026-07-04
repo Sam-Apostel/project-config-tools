@@ -1,9 +1,38 @@
-import type { DetectedTool, Operation, ProjectModel } from './types.js';
+import type { DetectedTool, JsonValue, Operation, ProjectModel } from './types.js';
 
 /** A detector teaches the project model to recognize a tool/framework. */
 export interface Detector {
   id: string;
   detect(project: ProjectModel): DetectedTool | null;
+}
+
+/** Who stands behind an opinion. `official` is true only when verified. */
+export interface OpinionAuthor {
+  name: string;
+  kind: 'person' | 'org';
+  url?: string;
+  official: boolean;
+}
+
+/**
+ * A single attributed recommendation. The base ships none of these — they come
+ * only from installed opinion packs, and the UI always renders the author. If
+ * `apply` is present, accepting it plans that operation through the Diff Sheet.
+ */
+export interface Improvement {
+  id: string;
+  title: string;
+  detail: string;
+  author: OpinionAuthor;
+  docUrl?: string;
+  apply?: { operationId: string; input: JsonValue };
+}
+
+/** A rule that yields an {@link Improvement} when it applies to a project. */
+export interface ImprovementRule {
+  id: string;
+  applies(project: ProjectModel): boolean;
+  suggest(project: ProjectModel): Improvement;
 }
 
 /**
@@ -18,6 +47,8 @@ export interface PluginContext {
   readonly project: ProjectModel;
   registerOperation<I>(operation: Operation<I>): void;
   registerDetector(detector: Detector): void;
+  /** Contribute an attributed recommendation (opinion packs only). */
+  registerImprovement(rule: ImprovementRule): void;
   log(message: string): void;
 }
 

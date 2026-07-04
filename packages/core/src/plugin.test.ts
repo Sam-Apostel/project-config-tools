@@ -71,6 +71,39 @@ describe('plugin system', () => {
     );
   });
 
+  it('ships no improvements in the neutral base', async () => {
+    const engine = await openProject(ROOT, { fs: makeFs({ name: 'demo' }) });
+    expect(engine.getImprovements()).toEqual([]);
+  });
+
+  it('surfaces attributed improvements from an opinion plugin', async () => {
+    const opinion: Plugin = {
+      id: 'ts-strict-opinion',
+      setup(ctx) {
+        ctx.registerImprovement({
+          id: 'strict',
+          applies: (p) => p.configFiles.some((f) => f.kind === 'tsconfig'),
+          suggest: () => ({
+            id: 'enable-strict',
+            title: 'Enable TypeScript strict mode',
+            detail: 'strict catches many bugs at compile time.',
+            author: { name: 'Example Author', kind: 'person', official: false },
+            apply: { operationId: 'set-tsconfig-option', input: { key: 'strict', value: true } },
+          }),
+        });
+      },
+    };
+    const fs = new InMemoryFileSystem({
+      '/proj/package.json': JSON.stringify({ name: 'demo' }, null, 2),
+      '/proj/tsconfig.json': '{}\n',
+    });
+    const engine = await openProject(ROOT, { fs, plugins: [opinion] });
+    const improvements = engine.getImprovements();
+    expect(improvements).toHaveLength(1);
+    expect(improvements[0]!.author.name).toBe('Example Author');
+    expect(improvements[0]!.apply?.operationId).toBe('set-tsconfig-option');
+  });
+
   it('skips a plugin that needs a newer API version', async () => {
     const future: Plugin = { id: 'future', apiVersion: 99, setup: () => undefined };
     const engine = await openProject(ROOT, { fs: makeFs({ name: 'demo' }), plugins: [future] });
