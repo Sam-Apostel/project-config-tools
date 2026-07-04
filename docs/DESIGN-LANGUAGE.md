@@ -1,27 +1,28 @@
 # Design Language
 
-> The look, feel, voice, and interaction rules for **Facet**. This is a
+> The look, feel, voice, and interaction rules for **visual-config**. This is a
 > design *system spec*, not an implementation. It exists so that the web UI,
 > the IDE panels, and the docs all read as one product.
 
 ---
 
-## 1. Name & brand
+## 1. Name
 
-**Working name: Facet.** A facet is one flat face of a cut gem — and this
-tool gives each part of your project configuration its own clean face while
-the whole remains a single object. It also evokes *faceted search*, which is
-exactly how the package catalog works.
+**Name: `visual-config`.** This is a descriptive package name, not a brand — it
+tells you exactly what the tool is: a visual interface for your project config.
+It is intentionally plain (`npx visual-config`), lowercase, and unadorned. We
+are not building an identity to defend; we are naming a utility.
 
-- **Provisional binary / npm name:** `facet` (⚠️ availability unverified — see
-  `docs/ROADMAP.md` open questions before committing to it).
-- **Tagline:** *One surface for every config.*
+- **npm / binary name:** `visual-config` (availability verified as free at time
+  of writing).
+- **One-line description:** *A visual interface for your project's config
+  files.*
 - **Voice in one line:** a calm, precise senior engineer who has read all the
   docs so you don't have to.
 
-If `facet` is unavailable, backup directions that fit the concept: **Overlay**
-(sits on top), **Dials** (controls), **Panel**, **Cartograph**. The design
-language below is name-agnostic.
+Runners-up if the name is ever reconsidered: `configview`, `config-gui`,
+`config-surface`. The design language below is name-agnostic — nothing here
+depends on the word.
 
 ---
 

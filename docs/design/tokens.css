@@ -1,5 +1,5 @@
 /*
- * Facet design tokens — CSS custom properties.
+ * visual-config design tokens — CSS custom properties.
  * Generated spec (hand-authored draft). Source of truth: tokens.json.
  * Dark is the reference mode; light overrides under [data-theme="light"]
  * and via prefers-color-scheme. Consume these — never hard-code a value.

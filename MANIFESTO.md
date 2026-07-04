@@ -1,6 +1,6 @@
 # Manifesto
 
-> **Facet** — one surface for every config. *(working name; see `docs/DESIGN-LANGUAGE.md`)*
+> **visual-config** — a visual interface for your project's config files.
 
 ## The problem
 
@@ -38,7 +38,7 @@ away. The file is still there. It is just no longer the only way in.
 
 **2. The files stay the source of truth.**
 We are not a new config format. We are not a lock-in layer. We do not add a
-`.facetrc` that shadows your real settings. We read and write the exact files
+hidden config of our own that shadows your real settings. We read and write the exact files
 git already tracks — `package.json`, `tsconfig.json`, `eslint.config.js` — and
 we write them the way a careful human would: minimal diffs, preserved
 formatting, preserved comments where the format allows. If you uninstall us
@@ -68,10 +68,20 @@ machine, not a magic wand. You always know what changed, why, and how to undo
 it — whether the actor was you or an agent.
 
 **6. The tool meets you where you work.**
-It starts as `npx facet` — zero install, opens in a browser, works on any
+It starts as `npx visual-config` — zero install, opens in a browser, works on any
 project. It grows into IDE panels — VS Code, JetBrains — where your config
-lives beside your code and the raw files can be tucked away behind a toggle
-for those who want them gone. One core engine, many faces: web, IDE, and MCP.
+lives beside your code and, if you want a calmer file tree, the raw files can be
+tidied out of the way using the IDE's own native features (they stay on disk,
+one click from view; we never lock them away). One core engine, many faces: web,
+IDE, and MCP.
+
+**7. The ecosystem extends it.**
+No core team can keep up with every framework, linter, and toolchain. So the
+tool owners do it themselves: anyone can ship a plugin that adds a config UI,
+catalog filters, docs, improvements, tool swaps, and migrations for their
+ecosystem — against the exact same API our built-in features use. The built-ins
+have no privileges a plugin can't have. A plugin's actions get the same diff
+preview, undo, and agent (MCP) access as everything else, for free.
 
 ## What we are not
 
@@ -92,5 +102,5 @@ make them through the wrong medium. Give configuration a real surface —
 visible, safe, reversible, documented, and equally usable by humans and
 agents — and a whole category of daily friction and drift disappears.
 
-If we're right, `npx facet` becomes the first thing you run in a new repo, and
+If we're right, `npx visual-config` becomes the first thing you run in a new repo, and
 the last time you open `tsconfig.json` by hand is the day you install it.

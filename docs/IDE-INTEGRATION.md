@@ -127,7 +127,7 @@ so one core can back editor clients *and* agents over the same transport family.
 domain:** **Biome** ships a single Rust core reused as CLI **and** LSP
 (`biome_lsp`); **ESLint** now ships `@eslint/mcp` (`npx @eslint/mcp`) so the
 *same* ESLint core is CLI + LSP + **MCP**. That is precisely the CLI + UI + MCP
-triad Facet wants — already validated by first-party tools. Facet should mirror
+triad visual-config wants — already validated by first-party tools. visual-config should mirror
 it:
 
 ```
@@ -186,7 +186,7 @@ core standalone first.
 | **Onboarding** | A teammate with the extension may forget files exist; one without sees raw files (fine — canonical). | Never break the raw path; augment, don't replace. Surface any drift in the UI. |
 
 **Recommended stance:** ship **nesting-under-`package.json` as the low-risk
-default** and **full hiding as an explicit, labeled opt-in**. Position Facet as
+default** and **full hiding as an explicit, labeled opt-in**. Position visual-config as
 a *lens over the real files*, not a replacement for them.
 
 ---

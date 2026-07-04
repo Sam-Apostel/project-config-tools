@@ -52,14 +52,21 @@ Two very different halves:
 - **Upgrade:** a patch/minor bump is easy and safe to automate (compute the
   target, write the range, re-install, show the diff). This ships early.
 - **Migrate (across a breaking major):** this is the hard, high-value part.
-  We *cannot* reliably auto-fix arbitrary breaking changes. What we **can** do
-  well: detect the major jump, surface the package's **migration guide** and
-  any published **codemod** (jscodeshift/`@codemod`, framework-specific
-  upgrade CLIs like `npx @next/codemod`, Angular `ng update`), run that codemod
-  behind a diff preview, and never pretend the result is done — always end on
-  "review these changes + run your tests." Honest scoping is the whole game
-  here. *Over-promising "one-click migrate any package" is the fastest way to
-  lose trust.*
+  We *cannot* reliably auto-fix arbitrary breaking changes. The mechanical part
+  is backed by **codemods** (jscodeshift/`@codemod`, `npx @next/codemod`, `ng
+  update`) or, where no codemod exists, a maintainer-authored **agent skill** —
+  a structured procedure an agent runs step-by-step under the Diff Sheet. The
+  *decision* part is the differentiator: **ingest the changelog** between
+  installed and target version, extract breaking changes, and **cross-reference
+  them against the app's own usage** (a static import/API map) so a human or an
+  AI can tell which major bumps are safe *for this codebase specifically* —
+  exposed both in the UI ("is this bump safe?") and over MCP (an agent decides
+  per-package what to upgrade now vs. defer, using your code, not generic
+  advice). Presenting changelogs for outdated deps is a high-value improvement
+  on its own. We never pretend the result is done — always end on "review +
+  run your tests." Full design: [`spec/04-migrations.md`](spec/04-migrations.md).
+  *Over-promising "one-click migrate any package" is the fastest way to lose
+  trust.*
 
 ### 3. Show the TypeScript setup + what could be improved
 
@@ -176,12 +183,16 @@ for everything above and should be the first runnable thing.
   (tool windows) let us embed the same web UI inside the IDE, talking to the
   same local engine. This is a well-trodden path (Nuxt DevTools, Console Ninja,
   GitLens panels).
-- **Hiding config files:** feasible but *leaky*, and honesty matters. VS Code
-  can visually hide/nest files (`files.exclude`, `explorer.fileNesting`) and
-  JetBrains has file scopes — but the files still exist, git still shows them,
-  CI still reads them, and other tools still open them. So "hide config files"
-  is a **view convenience, not a real abstraction**, and we must present it
-  that way. Details and limits in [`IDE-INTEGRATION.md`](IDE-INTEGRATION.md).
+- **Hiding config files:** reframed to match intent — this is about a **cleaner
+  work surface, not locking files away**, and it is built **only on IDE-native
+  features**. Default is native *file nesting* (tuck config under `package.json`);
+  an explicit opt-in uses native `files.exclude` (VS Code) / `TreeStructureProvider`
+  (JetBrains) to collapse them from the tree. Every "hide" is a standard,
+  visible, user-owned editor setting we could set by hand — reversible with one
+  click, never touching git/SCM, always with a persistent "Reveal in Explorer."
+  The files still exist and every other tool still sees them; we say so plainly.
+  It's decluttering, honestly scoped. Design: [`spec/06-ide-surface.md`](spec/06-ide-surface.md);
+  limits in [`IDE-INTEGRATION.md`](IDE-INTEGRATION.md).
 
 ### 12. Expose the same tools as an MCP server for agents
 
@@ -201,7 +212,7 @@ argue, one of the strongest reasons for this project to exist in 2026.
 
 This is addressed structurally, not with a checkbox:
 
-- You run **one** trusted, pinnable command (`facet`). Everything else is
+- You run **one** trusted, pinnable command (`visual-config`). Everything else is
   selected from a catalog backed by verified registry data — there is no
   free-typed install path to typo.
 - Every mutating action routes through a **confirmed diff** before it writes or
@@ -210,6 +221,25 @@ This is addressed structurally, not with a checkbox:
   (`preinstall`/`postinstall`), show provenance, and default to *not* executing
   untrusted lifecycle scripts without consent. This inverts the current
   `npx <typo>` failure mode entirely.
+
+### 14. A plugin system (tool owners ship their own vertical)
+
+**Feasibility ●●●○○  ·  Value ●●●●●  ·  Verdict: Architect for it from day one**
+
+Added to the vision: let ecosystems extend the tool. An `oxc` plugin adds a
+catalog filter for oxlint/oxfmt plus a visual UI for `.oxlintrc.json` and the
+swaps; a `tanstack` plugin adds docs for TypeScript/dev-server/testing plus a
+panel. This is the single highest-leverage architectural decision after the
+engine itself — it's how the tool covers a moving ecosystem the core team could
+never keep up with alone, and it mirrors what actually scaled Nuxt DevTools, the
+antfu ESLint ecosystem, and Vite. Feasibility is ●●● not ●●●●● only because a
+*safe* plugin system is real work: contributions must flow through the same
+Operation→Change→scope-enforced pipeline as built-ins (no direct file/shell
+access), and UI must be sandboxed. The design answer — **declarative-first**
+(most plugins ship a schema + docs, not code) with **built-ins as plugins** so
+the API is dogfooded — is specced in [`spec/02-plugin-api.md`](spec/02-plugin-api.md).
+Get the Operation/Change contract right (capability #12's requirement) and the
+plugin system and MCP both fall out of the same foundation.
 
 ---
 
@@ -230,6 +260,7 @@ This is addressed structurally, not with a checkbox:
 | 11 | IDE panel + hide files | ●●●○○ / ●●○○○ | ●●●●○ | Defer, scope honestly |
 | 12 | MCP server for agents | ●●●●○ | ●●●●● | Ship soon |
 | 13 | Anti-typo safety model | ●●●●○ | ●●●●● | Design principle |
+| 14 | Plugin system | ●●●○○ | ●●●●● | Architect from day one |
 
 ---
 
@@ -253,7 +284,7 @@ Where I'd push back or focus you:
    is the single most important architectural decision.**
 
 2. **"Minimal, formatting-preserving diffs" is a hard requirement, not a
-   nice-to-have.** The instant Facet reformats someone's `package.json` or
+   nice-to-have.** The instant visual-config reformats someone's `package.json` or
    clobbers a comment, trust is gone and they uninstall. Treat the
    diff/write layer as core infrastructure with its own test suite from day
    one.
