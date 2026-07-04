@@ -17,6 +17,11 @@ import { NodeCommandRunner, type CommandRunner, type RunOptions } from './runner
 import { NpmRegistry, type Registry } from './registry/npm.js';
 import { searchCatalog, type CatalogQuery, type CatalogResult } from './catalog.js';
 import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
+import { scanUsage } from './migration/usage.js';
+import { analyzeBump } from './migration/analyze.js';
+import { GithubChangelogSource } from './migration/changelog.js';
+import type { BumpAnalysis, ChangelogSource } from './migration/types.js';
+import semver from 'semver';
 import {
   PLUGIN_API_VERSION,
   type Detector,
@@ -32,6 +37,7 @@ export interface EngineDeps {
   registry: OperationRegistry;
   runner?: CommandRunner;
   npm?: Registry;
+  changelog?: ChangelogSource;
   plugins?: Plugin[];
   /** Absolute path to persist the undo journal (kept OUT of the project). */
   journalPath?: string;
@@ -47,6 +53,7 @@ export class Engine {
   private registry: OperationRegistry;
   private runner: CommandRunner;
   private npm: Registry;
+  private changelog: ChangelogSource;
   private journalFile?: string;
   private journal = new Journal();
   private pending = new Map<string, Change>();
@@ -62,6 +69,7 @@ export class Engine {
     this.registry = deps.registry;
     this.runner = deps.runner ?? new NodeCommandRunner();
     this.npm = deps.npm ?? new NpmRegistry();
+    this.changelog = deps.changelog ?? new GithubChangelogSource();
     this.journalFile = deps.journalPath;
   }
 
@@ -152,6 +160,23 @@ export class Engine {
   /** Compute fact-based diagnostics (outdated deps, …). */
   getDiagnostics(): Promise<Diagnostics> {
     return computeDiagnostics(this.project, this.npm);
+  }
+
+  /**
+   * Is bumping `name` to `to` (default: latest) safe for THIS codebase? Ingests
+   * the changelog, extracts breaking changes, and cross-references them against
+   * the app's actual usage of the package.
+   */
+  async analyzeBump(name: string, to?: string): Promise<BumpAnalysis> {
+    const dep = this.project.dependencies.find((d) => d.name === name);
+    if (!dep) throw new Error(`"${name}" is not a dependency of this project`);
+    const from = semver.minVersion(dep.range)?.version;
+    if (!from) throw new Error(`Cannot resolve a base version from range "${dep.range}"`);
+    const target = to ?? (await this.npm.latestVersion(name));
+    if (!target) throw new Error(`Cannot resolve a target version for "${name}"`);
+
+    const usage = await scanUsage(this.fs, this.root, name);
+    return analyzeBump({ pkg: name, from, to: target, changelog: this.changelog, usage });
   }
 
   /**

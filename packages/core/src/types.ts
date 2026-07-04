@@ -175,4 +175,6 @@ export interface ReadableFileSystem {
 export interface FileSystem extends ReadableFileSystem {
   writeFile(path: string, content: string): Promise<void>;
   deleteFile(path: string): Promise<void>;
+  /** Recursively list files under a directory (skipping node_modules/.git/dist). */
+  walk(dir: string): Promise<string[]>;
 }

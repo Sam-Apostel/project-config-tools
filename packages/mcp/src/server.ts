@@ -72,6 +72,19 @@ export function createMcpServer(engine: Engine): Server {
       description: 'List applied changes (the undo history).',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     },
+    {
+      name: 'analyze_bump',
+      description:
+        'Is upgrading a dependency safe for THIS codebase? Reads the changelog and cross-references breaking changes against how the app actually uses the package. Read-only.',
+      inputSchema: {
+        type: 'object',
+        required: ['package'],
+        properties: {
+          package: { type: 'string', description: 'Dependency name.' },
+          to: { type: 'string', description: 'Target version (default: latest).' },
+        },
+      },
+    },
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -147,6 +160,12 @@ export function createMcpServer(engine: Engine): Server {
         return JSON.stringify(await engine.undo(String(args.entryId)), null, 2);
       case 'list_journal':
         return JSON.stringify(engine.listJournal(), null, 2);
+      case 'analyze_bump':
+        return JSON.stringify(
+          await engine.analyzeBump(String(args.package), args.to ? String(args.to) : undefined),
+          null,
+          2,
+        );
       default: {
         const operationId = toolToOperation.get(name);
         if (!operationId) throw new Error(`Unknown tool: ${name}`);

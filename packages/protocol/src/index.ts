@@ -1,5 +1,6 @@
 import type {
   ApplyResult,
+  BumpAnalysis,
   CatalogQuery,
   CatalogResult,
   Change,
@@ -37,6 +38,7 @@ export interface ServerFunctions {
   getDiagnostics(): Promise<Diagnostics>;
   getTsconfig(): Promise<TsconfigView>;
   getImprovements(): Promise<Improvement[]>;
+  analyzeBump(pkg: string, to?: string): Promise<BumpAnalysis>;
 }
 
 export interface TsconfigView {
@@ -67,4 +69,5 @@ export type {
   CatalogResult,
   Diagnostics,
   Improvement,
+  BumpAnalysis,
 };

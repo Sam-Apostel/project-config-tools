@@ -67,6 +67,24 @@ export {
   type DiagnosticSeverity,
   type DiagnosticSource,
 } from './diagnostics.js';
+export { scanUsage } from './migration/usage.js';
+export { analyzeBump } from './migration/analyze.js';
+export {
+  GithubChangelogSource,
+  extractBreakingChanges,
+  extractSymbols,
+  parseGithubRepo,
+} from './migration/changelog.js';
+export type {
+  BumpAnalysis,
+  BumpFinding,
+  BumpAssessment,
+  BreakingChange,
+  ReleaseNotes,
+  ChangelogSource,
+  UsageMap,
+  UsageSite,
+} from './migration/types.js';
 
 export { PLUGIN_API_VERSION } from './plugin.js';
 export type {

@@ -9,7 +9,7 @@ import type {
   ProjectModel,
   ScriptEntry,
 } from '@visual-config/core';
-import type { TsconfigView } from '@visual-config/protocol';
+import type { BumpAnalysis, TsconfigView } from '@visual-config/protocol';
 import { connect, type ServerRpc } from './rpc.js';
 
 type Section =
@@ -35,6 +35,7 @@ export function App(): JSX.Element {
   const [outdated, setOutdated] = useState<OutdatedMap>(new Map());
   const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
   const [improvements, setImprovements] = useState<Improvement[]>([]);
+  const [bumps, setBumps] = useState<Map<string, BumpAnalysis | 'loading'>>(new Map());
   const rpcRef = useRef<ServerRpc | null>(null);
 
   useEffect(() => {
@@ -136,6 +137,23 @@ export function App(): JSX.Element {
     const result = await connection.planOperation('remove-dependency', { name });
     if (result.ok && result.change) setPending(result.change);
     else setError(result.error ?? 'Could not plan the removal.');
+  }, []);
+
+  const analyzeBump = useCallback(async (name: string) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setBumps((prev) => new Map(prev).set(name, 'loading'));
+    try {
+      const result = await connection.analyzeBump(name);
+      setBumps((prev) => new Map(prev).set(name, result));
+    } catch {
+      setBumps((prev) => {
+        const next = new Map(prev);
+        next.delete(name);
+        return next;
+      });
+      setError('Could not analyze that bump.');
+    }
   }, []);
 
   const planUpgradeAll = useCallback(async (upgrades: Array<{ name: string; range: string }>) => {
@@ -278,6 +296,8 @@ export function App(): JSX.Element {
           <Dependencies
             deps={deps}
             outdated={outdated}
+            bumps={bumps}
+            onAnalyze={analyzeBump}
             onUpgrade={(name, latest, dev) => planInstall(name, `^${latest}`, dev)}
             onRemove={(name) => planRemoveDependency(name)}
             onUpgradeAll={() =>
@@ -483,6 +503,8 @@ function Overview(props: {
 function Dependencies(props: {
   deps: DependencyEntry[];
   outdated: OutdatedMap;
+  bumps: Map<string, BumpAnalysis | 'loading'>;
+  onAnalyze: (name: string) => void;
   onUpgrade: (name: string, latest: string, dev: boolean) => void;
   onRemove: (name: string) => void;
   onUpgradeAll: () => void;
@@ -501,13 +523,15 @@ function Dependencies(props: {
         )}
       </div>
       <p className="section-sub">
-        Everything declared in package.json. Outdated versions are facts from the registry.
+        Everything declared in package.json. Outdated versions are facts from the registry; “Safe?”
+        checks the changelog against your code.
       </p>
       <div className="card">
         {props.deps.map((d) => {
           const out = props.outdated.get(d.name);
+          const bump = props.bumps.get(d.name);
           return (
-            <div className="row" key={`${d.type}:${d.name}`}>
+            <div className="row" key={`${d.type}:${d.name}`} style={{ flexWrap: 'wrap' }}>
               <span className="name grow">{d.name}</span>
               <span className="name" style={{ color: 'var(--text-muted)' }}>
                 {d.range}
@@ -518,6 +542,19 @@ function Dependencies(props: {
                 </span>
               )}
               <span className={`badge ${d.type === 'dev' ? 'dev' : ''}`}>{d.type}</span>
+              {out && bump === 'loading' && <span className="badge">checking…</span>}
+              {out && bump && bump !== 'loading' && (
+                <span
+                  className={`badge risk-${bump.verdict === 'safe' ? 'safe' : bump.verdict === 'review' ? 'review' : 'breaking'}`}
+                >
+                  {bump.verdict}
+                </span>
+              )}
+              {out && !bump && (
+                <button className="btn small" onClick={() => props.onAnalyze(d.name)}>
+                  Safe?
+                </button>
+              )}
               {out && (
                 <button
                   className="btn small"
@@ -529,6 +566,24 @@ function Dependencies(props: {
               <button className="btn small" onClick={() => props.onRemove(d.name)}>
                 Remove
               </button>
+              {bump && bump !== 'loading' && (
+                <div
+                  style={{
+                    flexBasis: '100%',
+                    fontSize: 12,
+                    color: 'var(--text-muted)',
+                    paddingLeft: 2,
+                  }}
+                >
+                  {bump.from} → {bump.to}:{' '}
+                  {bump.reasons.filter((r) => r.assessment === 'used-affected').length > 0
+                    ? bump.reasons
+                        .filter((r) => r.assessment === 'used-affected')
+                        .map((r) => r.note)
+                        .join(' ')
+                    : (bump.notes[0] ?? 'No affecting changes found for your usage.')}
+                </div>
+              )}
             </div>
           );
         })}
