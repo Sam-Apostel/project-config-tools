@@ -8,9 +8,10 @@ import type {
   ProjectModel,
   ScriptEntry,
 } from '@visual-config/core';
+import type { TsconfigView } from '@visual-config/protocol';
 import { connect, type ServerRpc } from './rpc.js';
 
-type Section = 'overview' | 'dependencies' | 'catalog' | 'scripts' | 'history';
+type Section = 'overview' | 'dependencies' | 'catalog' | 'typescript' | 'scripts' | 'history';
 
 interface TaskRun {
   taskId: string;
@@ -30,6 +31,7 @@ export function App(): JSX.Element {
   const [pending, setPending] = useState<Change | null>(null);
   const [runs, setRuns] = useState<TaskRun[]>([]);
   const [outdated, setOutdated] = useState<OutdatedMap>(new Map());
+  const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
   const rpcRef = useRef<ServerRpc | null>(null);
 
   useEffect(() => {
@@ -53,6 +55,7 @@ export function App(): JSX.Element {
         setRpc(connection);
         setProject(await connection.getProject());
         setJournal(await connection.listJournal());
+        setTsconfig(await connection.getTsconfig());
         // Diagnostics hit the network; load them without blocking the UI.
         connection
           .getDiagnostics()
@@ -78,7 +81,19 @@ export function App(): JSX.Element {
   }, []);
 
   const refreshJournal = useCallback(async () => {
-    if (rpcRef.current) setJournal(await rpcRef.current.listJournal());
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setJournal(await connection.listJournal());
+    setTsconfig(await connection.getTsconfig());
+  }, []);
+
+  const planSetTsconfig = useCallback(async (key: string, value: unknown) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('set-tsconfig-option', { key, value });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the change.');
   }, []);
 
   const planInstall = useCallback(async (name: string, range: string, dev: boolean) => {
@@ -161,6 +176,7 @@ export function App(): JSX.Element {
     overview: 0,
     dependencies: deps.length,
     catalog: 0,
+    typescript: 0,
     scripts: project.scripts.length,
     history: journal.filter((j) => !j.undone).length,
   };
@@ -194,6 +210,13 @@ export function App(): JSX.Element {
           active={section === 'catalog'}
           onClick={() => setSection('catalog')}
         />
+        {tsconfig?.present && (
+          <RailButton
+            label="TypeScript"
+            active={section === 'typescript'}
+            onClick={() => setSection('typescript')}
+          />
+        )}
         <RailButton
           label="Scripts"
           count={counts.scripts}
@@ -227,6 +250,9 @@ export function App(): JSX.Element {
             installed={new Set(deps.map((d) => d.name))}
             onInstall={planInstall}
           />
+        )}
+        {section === 'typescript' && tsconfig && (
+          <TypeScriptView tsconfig={tsconfig} onSet={planSetTsconfig} />
         )}
         {section === 'scripts' && (
           <Scripts
@@ -484,6 +510,66 @@ function Catalog(props: {
         ))}
         {results.length === 0 && (
           <div className="empty">{searching ? 'Searching…' : 'Search to browse packages.'}</div>
+        )}
+      </div>
+    </>
+  );
+}
+
+const COMMON_TS_OPTIONS: { key: string; blurb: string }[] = [
+  { key: 'strict', blurb: 'Enable all strict type-checking options.' },
+  { key: 'noUncheckedIndexedAccess', blurb: 'Add undefined to indexed access results.' },
+  { key: 'noImplicitAny', blurb: 'Error on expressions with an implied any type.' },
+  { key: 'skipLibCheck', blurb: 'Skip type-checking of declaration files.' },
+  { key: 'esModuleInterop', blurb: 'Emit interop helpers for CommonJS default imports.' },
+  { key: 'verbatimModuleSyntax', blurb: 'Require explicit import type / export type.' },
+];
+
+function TypeScriptView(props: {
+  tsconfig: TsconfigView;
+  onSet: (key: string, value: unknown) => void;
+}): JSX.Element {
+  const { options } = props.tsconfig;
+  const format = (v: unknown): string => (v === undefined ? 'unset' : JSON.stringify(v));
+  return (
+    <>
+      <h2 className="section-title">TypeScript</h2>
+      <p className="section-sub">
+        What tsconfig.json sets, as facts. Toggle a value to plan a comment-preserving edit — the
+        tool ships no opinion about which to choose.
+      </p>
+      <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>Common options</h3>
+      <div className="card">
+        {COMMON_TS_OPTIONS.map(({ key, blurb }) => {
+          const current = options[key];
+          return (
+            <div className="row" key={key}>
+              <div className="grow">
+                <div className="name">{key}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{blurb}</div>
+              </div>
+              <span className={`badge ${current === true ? 'risk-safe' : ''}`}>
+                {format(current)}
+              </span>
+              <button className="btn small" onClick={() => props.onSet(key, current !== true)}>
+                Set {current === true ? 'false' : 'true'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <h3 style={{ fontSize: 15, margin: '24px 0 8px' }}>All compilerOptions</h3>
+      <div className="card">
+        {Object.entries(options).map(([key, value]) => (
+          <div className="row" key={key}>
+            <span className="name grow">{key}</span>
+            <span className="name" style={{ color: 'var(--text-muted)' }}>
+              {JSON.stringify(value)}
+            </span>
+          </div>
+        ))}
+        {Object.keys(options).length === 0 && (
+          <div className="empty">No compilerOptions set in tsconfig.json.</div>
         )}
       </div>
     </>

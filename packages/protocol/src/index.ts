@@ -34,6 +34,12 @@ export interface ServerFunctions {
   stopScript(taskId: string): Promise<void>;
   searchCatalog(query: CatalogQuery): Promise<CatalogResult>;
   getDiagnostics(): Promise<Diagnostics>;
+  getTsconfig(): Promise<TsconfigView>;
+}
+
+export interface TsconfigView {
+  present: boolean;
+  options: Record<string, unknown>;
 }
 
 /** Methods a face exposes to the daemon (birpc client functions; server-pushed). */

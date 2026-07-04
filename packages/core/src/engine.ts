@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { parse as parseJsonc } from 'jsonc-parser';
 import type {
   ApplyResult,
   Change,
@@ -114,6 +115,20 @@ export class Engine {
   /** Compute fact-based diagnostics (outdated deps, …). */
   getDiagnostics(): Promise<Diagnostics> {
     return computeDiagnostics(this.project, this.npm);
+  }
+
+  /** The compilerOptions this project's tsconfig.json literally sets (owned view). */
+  async getTsconfig(): Promise<{ present: boolean; options: Record<string, unknown> }> {
+    if (!this.project.configFiles.some((f) => f.path === 'tsconfig.json')) {
+      return { present: false, options: {} };
+    }
+    try {
+      const text = await this.fs.readFile(join(this.root, 'tsconfig.json'));
+      const parsed = parseJsonc(text) as { compilerOptions?: Record<string, unknown> } | undefined;
+      return { present: true, options: parsed?.compilerOptions ?? {} };
+    } catch {
+      return { present: false, options: {} };
+    }
   }
 
   private makeContext(): OperationContext {
