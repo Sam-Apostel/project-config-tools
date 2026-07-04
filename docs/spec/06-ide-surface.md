@@ -20,6 +20,44 @@ Same SPA as `npx visual-config`, embedded per IDE, talking to a spawned daemon
 - **JetBrains** — a tool window embedding the SPA via JCEF; optional
   `FileEditorProvider` form tab alongside the JSON editor (never
   `HIDE_DEFAULT_EDITOR`).
+- **Zed** — *cannot* embed the SPA (see §4); integrates via MCP + tasks +
+  browser handoff instead.
+
+## 1a. Zed — MCP-native, no embedded panel (graceful degradation)
+
+Zed’s extension model is fundamentally different and, for our purposes,
+**more limited on UI but excellent on agents**. Extensions are Rust compiled to
+WebAssembly in a sandbox with **no access to Zed’s GPUI** — there is **no
+webview, no custom panel, no custom editor**. Our rich UI simply cannot live
+inside Zed today (this is an acknowledged, unbuilt feature request upstream; even
+the aspirational future is a *declarative native* API, not a browser). So we do
+**not** fight it — we lean on what Zed does have, and the architecture degrades
+without a rewrite because everything is already an Operation exposed over MCP.
+
+Zed integration = three native surfaces:
+
+1. **MCP context server (the primary, deepest integration).** Zed natively
+   supports MCP servers ("context servers"). We ship a tiny Zed extension whose
+   `extension.toml` declares a `[context_servers.visual-config]` and whose Rust
+   `context_server_command` just launches `visual-config mcp` (spec 05). Zed’s
+   Agent Panel then gets our guarded, diff-previewed, reversible config tools
+   natively. Users who’d rather not install an extension can add the same server
+   via `context_servers` in `settings.json`. **This is nearly free** — it’s the
+   MCP server we’re already building, wrapped in a ~30-line extension.
+2. **Tasks for scripts.** Zed has a tasks system (`.zed/tasks.json`, and it
+   imports `.vscode/tasks.json`). `visual-config` can generate task entries for
+   `package.json` scripts (and an "Open visual-config" task that runs
+   `npx visual-config`), so scripts and launching the browser UI are one
+   command-palette action away — parallel to the VS Code Tasks integration.
+3. **JSON schema associations.** Zed validates JSON via `json-language-server`;
+   we can ensure config files get schema validation/completion through its
+   `lsp.json-language-server.settings.json.schemas` settings.
+
+**The rich UI in a Zed workflow** is `npx visual-config` in the browser next to
+Zed (exactly as it works with any editor), launchable from a Zed task. This is a
+first-class, honest story: Zed users get the *agentic* half deeply integrated and
+the *visual* half a keystroke away — we just don’t pretend the panel embeds when
+it can’t.
 
 ## 2. The "cleaner workspace" toggle — design intent
 
@@ -39,6 +77,8 @@ Use **native file nesting** to tuck config under `package.json`:
   collapse under `package.json`; nothing is hidden, everything one expand away.
 - **JetBrains:** the native File Nesting rules, contributable via
   `com.intellij.projectViewNestingRulesProvider`.
+- **Zed:** ❌ no file-nesting feature exists (and extensions can’t touch the
+  project panel), so nesting isn’t offered on Zed — only the coarse opt-in below.
 
 This is on-by-default-*offered* (we propose the setting; the user accepts), fully
 reversible, and uses zero non-standard mechanism.
@@ -50,6 +90,11 @@ For developers who want the config truly out of the tree:
   settings file, it’s discoverable and trivially reversible; it is *not* a hidden
   visual-config mechanism.
 - **JetBrains:** `TreeStructureProvider` to filter the nodes, or native Scopes.
+- **Zed:** `file_scan_exclusions` in `.zed/settings.json` (a native, visible,
+  user-owned setting) collapses matched files from the project panel. Coarse
+  (glob-based, no nesting), but honest and reversible like the others. Since Zed
+  has no config-panel extension, the "Reveal" affordance lives in the browser UI
+  rather than in-editor.
 
 ### 2.3 Guardrails that keep it honest
 - **Off by default.** Nesting is offered; full hiding is explicit opt-in.

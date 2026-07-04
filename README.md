@@ -100,8 +100,10 @@ panel** next to your code — with an optional **cleaner-workspace** toggle that
 tidies config files out of the file tree using **native IDE features** (file
 nesting, `files.exclude`). It's decluttering, not lock-away: the files stay on
 disk, git and every other tool still see them, and a persistent "Reveal in
-Explorer" is always one click away. One core engine, shown in the browser or in
-the IDE. Feasibility and limits in
+Explorer" is always one click away. **Zed** can't embed the panel (its
+extensions have no webview API), but it's **natively MCP-first**, so it gets our
+config tools in its agent panel plus a browser handoff for the UI. One core
+engine, shown wherever it fits. Feasibility and limits in
 [`docs/IDE-INTEGRATION.md`](docs/IDE-INTEGRATION.md); design in
 [`docs/spec/06-ide-surface.md`](docs/spec/06-ide-surface.md).
 

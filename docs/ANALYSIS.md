@@ -180,10 +180,15 @@ for everything above and should be the first runnable thing.
 
 **Feasibility ●●●○○ (panel) / ●●○○○ (hiding) · Value ●●●●○ · Verdict: Defer to Phase 3, scope honestly**
 
-- **The panel:** very feasible. Both VS Code (Webview Views) and JetBrains
-  (tool windows) let us embed the same web UI inside the IDE, talking to the
-  same local engine. This is a well-trodden path (Nuxt DevTools, Console Ninja,
-  GitLens panels).
+- **The panel:** very feasible in **VS Code** (Webview Views) and **JetBrains**
+  (tool windows) — both embed the same web UI talking to the same local engine
+  (a well-trodden path: Nuxt DevTools, GitLens panels). **Zed is the exception**:
+  its Rust→WASM extensions have no webview/panel/custom-editor API, so the panel
+  *cannot* embed there. But Zed is **natively MCP-first**, so it gets the
+  agentic half deeply (a ~30-line extension registers our `visual-config mcp` as
+  a context server) plus tasks + the browser UI alongside — the architecture
+  degrades gracefully because everything is already an Operation over MCP. See
+  [`spec/06-ide-surface.md`](spec/06-ide-surface.md) §1a.
 - **Hiding config files:** reframed to match intent — this is about a **cleaner
   work surface, not locking files away**, and it is built **only on IDE-native
   features**. Default is native *file nesting* (tuck config under `package.json`);

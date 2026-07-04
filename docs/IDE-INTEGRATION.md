@@ -191,25 +191,56 @@ a *lens over the real files*, not a replacement for them.
 
 ---
 
+## Zed — MCP-native, no embedded UI (researched 2026)
+
+Zed is a deliberately different case. Extensions are **Rust compiled to
+WebAssembly** in a sandbox with **no access to Zed’s GPUI** — so there is **no
+webview, no custom panel, and no custom editor**. Our rich UI **cannot** be
+embedded in Zed today (it’s an open, unbuilt upstream request; even the
+aspirational future is a *declarative native* rendering API, not a browser). We
+don’t fight this — the Operation/MCP architecture degrades to Zed’s real
+strengths without a rewrite:
+
+- **MCP context server — Feasible, and the primary integration.** Zed has
+  first-class MCP support. A ~30-line extension declares
+  `[context_servers.visual-config]` in `extension.toml` and returns
+  `visual-config mcp` from `context_server_command`; Zed’s Agent Panel then gets
+  our guarded config tools. (Users can also add it via `context_servers` in
+  `settings.json`, no extension needed.)
+- **Tasks — Feasible.** `.zed/tasks.json` (also imports `.vscode/tasks.json`)
+  runs `package.json` scripts and can launch `npx visual-config`.
+- **JSON schema — Feasible.** Config validation/completion via
+  `json-language-server` schema associations.
+- **Embedded panel / form editor — Not possible.** The rich UI is the browser
+  app next to Zed, launched from a Zed task.
+- **File decluttering — Partial (coarse).** Only `file_scan_exclusions` in
+  `.zed/settings.json`; **no file nesting**, and extensions can’t touch the
+  project panel.
+
+Sources: zed.dev/docs (developing-extensions, ai/mcp, mcp-extensions, tasks,
+languages/json, all-settings), `zed_extension_api` crate, zed-industries/zed
+issues #21208 (webview), #7092 (file nesting), discussion #37270 (custom editor).
+
 ## Consolidated feasibility matrix
 
-| Capability | VS Code | JetBrains |
-|---|---|---|
-| Web UI panel in sidebar/panel | **Feasible** (WebviewView) | **Feasible** (ToolWindow + JCEF) |
-| Form over `package.json`, file stays canonical | **Feasible** (CustomTextEditor, "Reopen With") | **Partial** (FileEditorProvider + JCEF) |
-| Force our editor as *default* for `package.json` | Possible, **not advisable** | Possible (`HIDE_DEFAULT_EDITOR`), **not advisable** |
-| Nest config under `package.json` | **Feasible** (fileNesting) | **Feasible** (File Nesting / TreeStructureProvider) |
-| Truly hide config files | **Partial** (`files.exclude`, leaky, mutates settings) | **Partial-to-Feasible** (`TreeStructureProvider`) |
-| Run/manage npm scripts | **Feasible** (Tasks API, built-in) | **Feasible** (built-in) |
-| Config validation/completion | **Feasible** (schemas, no custom LSP) | **Feasible** (built-in) |
-| Shared core across surfaces | **Feasible** (library + adapters) | **Feasible** (JCEF → same core) |
-| MCP server on same core | **Feasible** (thin wrapper) | n/a (transport-agnostic) |
+| Capability | VS Code | JetBrains | Zed |
+|---|---|---|---|
+| Web UI panel in sidebar/panel | **Feasible** (WebviewView) | **Feasible** (ToolWindow + JCEF) | **Not possible** (no webview/panel API) |
+| Form over `package.json`, file stays canonical | **Feasible** (CustomTextEditor, "Reopen With") | **Partial** (FileEditorProvider + JCEF) | **Not possible** (no custom editor) |
+| Force our editor as *default* for `package.json` | Possible, **not advisable** | Possible (`HIDE_DEFAULT_EDITOR`), **not advisable** | n/a |
+| Nest config under `package.json` | **Feasible** (fileNesting) | **Feasible** (File Nesting / TreeStructureProvider) | **Not supported** (no nesting) |
+| Truly hide config files | **Partial** (`files.exclude`, leaky, mutates settings) | **Partial-to-Feasible** (`TreeStructureProvider`) | **Partial** (`file_scan_exclusions`, user settings only) |
+| Run/manage npm scripts | **Feasible** (Tasks API, built-in) | **Feasible** (built-in) | **Feasible** (`.zed/tasks.json`) |
+| Config validation/completion | **Feasible** (schemas, no custom LSP) | **Feasible** (built-in) | **Feasible** (json-language-server schemas) |
+| Shared core across surfaces | **Feasible** (library + adapters) | **Feasible** (JCEF → same core) | **Feasible** (MCP + browser, not embedded) |
+| MCP server on same core | **Feasible** (thin wrapper) | n/a (transport-agnostic) | **Feasible & native** (context server) |
 
 **Realistic build order:** (1) core library + npx server + browser UI; (2) MCP
-wrapper (cheap once the core exists); (3) VS Code extension reusing the UI via
-webview/postMessage; (4) JetBrains via JCEF last. Editing `next.config.*`
-(executable code) is the single biggest technical risk — scope it to static
-configs with a graceful raw-editing fallback.
+wrapper (cheap once the core exists) — **this also unlocks Zed immediately**;
+(3) VS Code extension reusing the UI via webview/postMessage; (4) Zed extension
+(thin MCP context-server wrapper, near-free); (5) JetBrains via JCEF last.
+Editing `next.config.*` (executable code) is the single biggest technical risk —
+scope it to static configs with a graceful raw-editing fallback.
 
 ---
 

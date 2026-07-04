@@ -207,6 +207,11 @@ as a JCEF shell around the same UI/core (see
   other tools still see them"). Every "hide" is a standard editor setting the
   user could set themselves — reversible, never touching git/SCM. *(#11 —
   reframed as honest, native decluttering; [`spec/06-ide-surface.md`](spec/06-ide-surface.md).)*
+- **Zed** — a thin extension registering `visual-config mcp` as a native context
+  server (near-free once the MCP server exists), plus `.zed/tasks.json` for
+  scripts and a browser handoff for the UI. Zed *can't* embed our panel
+  (Rust→WASM extensions, no webview), so this is MCP + tasks + browser, and it
+  ships early precisely because it's cheap. *([`spec/06-ide-surface.md`](spec/06-ide-surface.md) §1a.)*
 - **JetBrains (WebStorm/IntelliJ)** — tool window + JCEF embedding the same UI;
   native File Nesting / `TreeStructureProvider`. Last, because it's the heaviest
   lift.
