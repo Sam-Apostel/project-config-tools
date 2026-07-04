@@ -24,14 +24,17 @@ already have.
 Running from source (see [Development](#run-it-from-source-development)):
 
 - 🟢 `visual-config` boots a local daemon and opens a **React UI** in the browser
-- 🟢 **Overview / Dependencies / Scripts / History** views over your real `package.json`
+- 🟢 **Overview** (inline-editable name/version/description), **Dependencies**,
+  **Scripts**, **History** over your real `package.json`
 - 🟢 **Package catalog** — search the npm registry, install by selecting (no free-typed name)
-- 🟢 **Outdated diagnostics** — facts from the registry, with Upgrade buttons
+- 🟢 **Outdated diagnostics** — facts from the registry, with **Upgrade** and **Upgrade all**
+- 🟢 **TypeScript** — view `compilerOptions` and toggle them as reviewed edits
 - 🟢 **Run scripts** as buttons with streamed output
 - 🟢 The **Diff Sheet** — every mutation previewed and confirmed, with **undo**
-- 🟢 Operations: add/remove script, install/remove dependency, set tsconfig option
+- 🟢 Operations: add/remove script, install/remove/upgrade dependency, set tsconfig option, set package field
 - 🟢 **MCP server** (`visual-config mcp`) exposing the same operations to agents
-- 🟡 Next up: the plugin API, opinions, migrations, more config adapters, IDE panels
+- 🟢 **Plugin system** — built-ins load as a plugin; third parties add operations + detectors (`@visual-config/kit`)
+- 🟡 Next up: opinions, migrations (changelog + safety), more config adapters, publish flow, IDE panels
 
 Everything writes through a **format- and comment-preserving** layer, and the
 files stay the only source of truth.

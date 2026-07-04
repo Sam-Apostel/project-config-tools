@@ -15,6 +15,29 @@ foundation. Concrete design in [`spec/`](spec/); see especially
 
 ---
 
+## Implementation status (live)
+
+What's built and green on `main` (55 tests, typecheck + CI):
+
+- ✅ **Milestone 0** and then some — the whole spine runs from source.
+- ✅ Monorepo (core, protocol, server, ui, mcp, kit, cli); format-preserving
+  write layer with golden tests; Operation→Change→undo engine with enforced scope.
+- ✅ Daemon (birpc/ws, token-gated) + **React UI**: Overview (inline-editable
+  metadata), Dependencies (outdated facts + Upgrade/Upgrade-all + Remove),
+  **Catalog** (registry search + install-by-selecting), **TypeScript** (view +
+  toggle compilerOptions), Scripts (run + add), History (undo), the Diff Sheet.
+- ✅ Operations: add/remove script, install/remove/upgrade dependency,
+  set-tsconfig-option, set-package-field.
+- ✅ **Diagnostics** (outdated facts via the registry, semver-based).
+- ✅ **MCP server** (`visual-config mcp`) projecting every operation as a tool.
+- ✅ **Plugin system** — built-ins load as a plugin; third parties can add
+  operations + detectors (`@visual-config/kit`).
+- 🔜 Not yet: opinions loading, migrations (changelog + codemod/skill + safety),
+  `next.config` AST editing, publish flow (publint/attw), lockfile-based vulns,
+  IDE extensions. The phases below detail these.
+
+---
+
 ## Milestone 0 — The thin end-to-end slice (first code)
 
 Before fanning out Phase 0/1, build the **whole spine on the smallest feature**,
