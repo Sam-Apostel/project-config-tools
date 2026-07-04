@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
+  CatalogPackage,
   Change,
   DependencyEntry,
+  Diagnostic,
   JournalEntry,
   ProjectModel,
   ScriptEntry,
 } from '@visual-config/core';
 import { connect, type ServerRpc } from './rpc.js';
 
-type Section = 'overview' | 'dependencies' | 'scripts' | 'history';
+type Section = 'overview' | 'dependencies' | 'catalog' | 'scripts' | 'history';
 
 interface TaskRun {
   taskId: string;
@@ -16,6 +18,8 @@ interface TaskRun {
   output: string;
   status: 'running' | 'done' | 'error';
 }
+
+type OutdatedMap = Map<string, { latest: string; diff: string; severity: string }>;
 
 export function App(): JSX.Element {
   const [rpc, setRpc] = useState<ServerRpc | null>(null);
@@ -25,6 +29,7 @@ export function App(): JSX.Element {
   const [section, setSection] = useState<Section>('overview');
   const [pending, setPending] = useState<Change | null>(null);
   const [runs, setRuns] = useState<TaskRun[]>([]);
+  const [outdated, setOutdated] = useState<OutdatedMap>(new Map());
   const rpcRef = useRef<ServerRpc | null>(null);
 
   useEffect(() => {
@@ -48,6 +53,23 @@ export function App(): JSX.Element {
         setRpc(connection);
         setProject(await connection.getProject());
         setJournal(await connection.listJournal());
+        // Diagnostics hit the network; load them without blocking the UI.
+        connection
+          .getDiagnostics()
+          .then((diag) => {
+            const map: OutdatedMap = new Map();
+            for (const d of diag.items) {
+              if (d.kind === 'outdated' && d.data) {
+                map.set(d.target, {
+                  latest: String(d.data.latest),
+                  diff: String(d.data.diff),
+                  severity: d.severity,
+                });
+              }
+            }
+            if (!closed) setOutdated(map);
+          })
+          .catch(() => undefined);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
     return () => {
@@ -57,6 +79,31 @@ export function App(): JSX.Element {
 
   const refreshJournal = useCallback(async () => {
     if (rpcRef.current) setJournal(await rpcRef.current.listJournal());
+  }, []);
+
+  const planInstall = useCallback(async (name: string, range: string, dev: boolean) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('install-package', { name, range, dev });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the install.');
+  }, []);
+
+  const searchCatalog = useCallback(async (text: string): Promise<CatalogPackage[]> => {
+    const connection = rpcRef.current;
+    if (!connection || !text.trim()) return [];
+    const result = await connection.searchCatalog({ text });
+    return result.packages;
+  }, []);
+
+  const planRemoveDependency = useCallback(async (name: string) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('remove-dependency', { name });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the removal.');
   }, []);
 
   const runScript = useCallback(async (name: string) => {
@@ -104,9 +151,11 @@ export function App(): JSX.Element {
   const counts: Record<Section, number> = {
     overview: 0,
     dependencies: deps.length,
+    catalog: 0,
     scripts: project.scripts.length,
     history: journal.filter((j) => !j.undone).length,
   };
+  const outdatedCount = deps.filter((d) => outdated.has(d.name)).length;
 
   return (
     <div className="app">
@@ -132,6 +181,11 @@ export function App(): JSX.Element {
           onClick={() => setSection('dependencies')}
         />
         <RailButton
+          label="Catalog"
+          active={section === 'catalog'}
+          onClick={() => setSection('catalog')}
+        />
+        <RailButton
           label="Scripts"
           count={counts.scripts}
           active={section === 'scripts'}
@@ -147,8 +201,22 @@ export function App(): JSX.Element {
 
       <main className="main">
         {error && <div className="error-banner">{error}</div>}
-        {section === 'overview' && <Overview project={project} />}
-        {section === 'dependencies' && <Dependencies deps={deps} />}
+        {section === 'overview' && <Overview project={project} outdatedCount={outdatedCount} />}
+        {section === 'dependencies' && (
+          <Dependencies
+            deps={deps}
+            outdated={outdated}
+            onUpgrade={(name, latest, dev) => planInstall(name, `^${latest}`, dev)}
+            onRemove={(name) => planRemoveDependency(name)}
+          />
+        )}
+        {section === 'catalog' && (
+          <Catalog
+            onSearch={searchCatalog}
+            installed={new Set(deps.map((d) => d.name))}
+            onInstall={planInstall}
+          />
+        )}
         {section === 'scripts' && (
           <Scripts
             scripts={project.scripts}
@@ -181,8 +249,8 @@ function RailButton(props: {
   );
 }
 
-function Overview(props: { project: ProjectModel }): JSX.Element {
-  const { project } = props;
+function Overview(props: { project: ProjectModel; outdatedCount: number }): JSX.Element {
+  const { project, outdatedCount } = props;
   return (
     <>
       <h2 className="section-title">Overview</h2>
@@ -203,6 +271,7 @@ function Overview(props: { project: ProjectModel }): JSX.Element {
         <div className="row">
           <span className="grow">Dependencies</span>
           <span className="name">{project.dependencies.length}</span>
+          {outdatedCount > 0 && <span className="badge risk-review">{outdatedCount} outdated</span>}
         </div>
         <div className="row">
           <span className="grow">Scripts</span>
@@ -228,22 +297,128 @@ function Overview(props: { project: ProjectModel }): JSX.Element {
   );
 }
 
-function Dependencies(props: { deps: DependencyEntry[] }): JSX.Element {
+function Dependencies(props: {
+  deps: DependencyEntry[];
+  outdated: OutdatedMap;
+  onUpgrade: (name: string, latest: string, dev: boolean) => void;
+  onRemove: (name: string) => void;
+}): JSX.Element {
   return (
     <>
       <h2 className="section-title">Dependencies</h2>
-      <p className="section-sub">Everything declared in package.json.</p>
+      <p className="section-sub">
+        Everything declared in package.json. Outdated versions are facts from the registry.
+      </p>
       <div className="card">
-        {props.deps.map((d) => (
-          <div className="row" key={`${d.type}:${d.name}`}>
-            <span className="name grow">{d.name}</span>
-            <span className="name" style={{ color: 'var(--text-muted)' }}>
-              {d.range}
-            </span>
-            <span className={`badge ${d.type === 'dev' ? 'dev' : ''}`}>{d.type}</span>
+        {props.deps.map((d) => {
+          const out = props.outdated.get(d.name);
+          return (
+            <div className="row" key={`${d.type}:${d.name}`}>
+              <span className="name grow">{d.name}</span>
+              <span className="name" style={{ color: 'var(--text-muted)' }}>
+                {d.range}
+              </span>
+              {out && (
+                <span className={`badge ${out.severity === 'warn' ? 'risk-review' : ''}`}>
+                  → {out.latest} ({out.diff})
+                </span>
+              )}
+              <span className={`badge ${d.type === 'dev' ? 'dev' : ''}`}>{d.type}</span>
+              {out && (
+                <button
+                  className="btn small"
+                  onClick={() => props.onUpgrade(d.name, out.latest, d.type === 'dev')}
+                >
+                  Upgrade
+                </button>
+              )}
+              <button className="btn small" onClick={() => props.onRemove(d.name)}>
+                Remove
+              </button>
+            </div>
+          );
+        })}
+        {props.deps.length === 0 && <div className="empty">No dependencies yet.</div>}
+      </div>
+    </>
+  );
+}
+
+function Catalog(props: {
+  installed: Set<string>;
+  onSearch: (text: string) => Promise<CatalogPackage[]>;
+  onInstall: (name: string, range: string, dev: boolean) => void;
+}): JSX.Element {
+  const [text, setText] = useState('');
+  const [results, setResults] = useState<CatalogPackage[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  const doSearch = async (query: string): Promise<void> => {
+    setSearching(true);
+    try {
+      setResults(await props.onSearch(query));
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  return (
+    <>
+      <h2 className="section-title">Catalog</h2>
+      <p className="section-sub">
+        Browse the npm registry and install by selecting — never by typing a name into a command.
+      </p>
+      <form
+        className="form-inline"
+        style={{ marginTop: 0, marginBottom: 16 }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void doSearch(text);
+        }}
+      >
+        <input
+          className="field"
+          style={{ flex: 1, minWidth: 240 }}
+          placeholder="Search packages, e.g. zod, react-query…"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <button className="btn primary small" type="submit" disabled={!text.trim() || searching}>
+          {searching ? 'Searching…' : 'Search'}
+        </button>
+      </form>
+      <div className="card">
+        {results.map((p) => (
+          <div className="row" key={p.name}>
+            <div className="grow">
+              <div className="name">
+                {p.name} <span style={{ color: 'var(--text-faint)' }}>{p.version}</span>
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{p.description}</div>
+            </div>
+            {props.installed.has(p.name) ? (
+              <span className="badge risk-safe">installed</span>
+            ) : (
+              <>
+                <button
+                  className="btn small"
+                  onClick={() => props.onInstall(p.name, `^${p.version}`, true)}
+                >
+                  + dev
+                </button>
+                <button
+                  className="btn primary small"
+                  onClick={() => props.onInstall(p.name, `^${p.version}`, false)}
+                >
+                  Install
+                </button>
+              </>
+            )}
           </div>
         ))}
-        {props.deps.length === 0 && <div className="empty">No dependencies yet.</div>}
+        {results.length === 0 && (
+          <div className="empty">{searching ? 'Searching…' : 'Search to browse packages.'}</div>
+        )}
       </div>
     </>
   );

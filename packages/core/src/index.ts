@@ -7,6 +7,7 @@ import { removeDependencyOperation } from './operations/remove-dependency.js';
 import { setTsconfigOptionOperation } from './operations/set-tsconfig-option.js';
 import { NodeFileSystem } from './fs.js';
 import type { CommandRunner } from './runner.js';
+import type { Registry } from './registry/npm.js';
 import type { FileSystem } from './types.js';
 
 export * from './types.js';
@@ -36,6 +37,22 @@ export { setJsonProperty, removeJsonProperty } from './json/edit.js';
 export { detectFormatting } from './json/format.js';
 export { makeUnifiedDiff } from './diff.js';
 export { enforceScope, matchesAnyGlob } from './scope.js';
+export { NpmRegistry, type Registry, type RegistrySearchHit } from './registry/npm.js';
+export {
+  searchCatalog,
+  type CatalogQuery,
+  type CatalogResult,
+  type CatalogPackage,
+} from './catalog.js';
+export {
+  computeDiagnostics,
+  computeOutdated,
+  type Diagnostics,
+  type Diagnostic,
+  type DiagnosticKind,
+  type DiagnosticSeverity,
+  type DiagnosticSource,
+} from './diagnostics.js';
 
 /** Registry preloaded with the built-in (first-party) operations. */
 export function createDefaultRegistry(): OperationRegistry {
@@ -52,6 +69,7 @@ export interface OpenProjectOptions {
   fs?: FileSystem;
   registry?: OperationRegistry;
   runner?: CommandRunner;
+  npm?: Registry;
 }
 
 /** Convenience: build an {@link Engine} for a project root with built-ins registered. */
@@ -61,6 +79,7 @@ export function openProject(root: string, options: OpenProjectOptions = {}): Pro
     fs: options.fs ?? new NodeFileSystem(),
     registry: options.registry ?? createDefaultRegistry(),
     runner: options.runner,
+    npm: options.npm,
   };
   return Engine.create(deps);
 }

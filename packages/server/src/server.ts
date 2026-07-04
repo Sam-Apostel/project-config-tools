@@ -100,6 +100,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       listJournal: async () => engine.listJournal(),
       runScript: async (name) => ({ taskId: taskManager.run(name), script: name }),
       stopScript: async (taskId) => taskManager.stop(taskId),
+      searchCatalog: (query) => engine.searchCatalog(query),
+      getDiagnostics: () => engine.getDiagnostics(),
     };
 
     const rpc = createBirpc<ClientFunctions, ServerFunctions>(serverFunctions, {

@@ -12,12 +12,16 @@ import { Journal, type Actor, type JournalEntry } from './journal.js';
 import { detectProject } from './project/detect.js';
 import { enforceScope } from './scope.js';
 import { NodeCommandRunner, type CommandRunner, type RunOptions } from './runner.js';
+import { NpmRegistry, type Registry } from './registry/npm.js';
+import { searchCatalog, type CatalogQuery, type CatalogResult } from './catalog.js';
+import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
 
 export interface EngineDeps {
   root: string;
   fs: FileSystem;
   registry: OperationRegistry;
   runner?: CommandRunner;
+  npm?: Registry;
 }
 
 /**
@@ -29,6 +33,7 @@ export class Engine {
   private fs: FileSystem;
   private registry: OperationRegistry;
   private runner: CommandRunner;
+  private npm: Registry;
   private journal = new Journal();
   private pending = new Map<string, Change>();
   private changeSeq = 0;
@@ -40,6 +45,7 @@ export class Engine {
     this.fs = deps.fs;
     this.registry = deps.registry;
     this.runner = deps.runner ?? new NodeCommandRunner();
+    this.npm = deps.npm ?? new NpmRegistry();
   }
 
   static async create(deps: EngineDeps): Promise<Engine> {
@@ -59,6 +65,16 @@ export class Engine {
 
   listOperations(): OperationInfo[] {
     return this.registry.list();
+  }
+
+  /** Search the npm registry for the package catalog. */
+  searchCatalog(query: CatalogQuery): Promise<CatalogResult> {
+    return searchCatalog(this.npm, query);
+  }
+
+  /** Compute fact-based diagnostics (outdated deps, …). */
+  getDiagnostics(): Promise<Diagnostics> {
+    return computeDiagnostics(this.project, this.npm);
   }
 
   private makeContext(): OperationContext {

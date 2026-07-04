@@ -1,6 +1,9 @@
 import type {
   ApplyResult,
+  CatalogQuery,
+  CatalogResult,
   Change,
+  Diagnostics,
   JournalEntry,
   OperationInfo,
   ProjectModel,
@@ -29,6 +32,8 @@ export interface ServerFunctions {
   listJournal(): Promise<JournalEntry[]>;
   runScript(name: string): Promise<TaskHandle>;
   stopScript(taskId: string): Promise<void>;
+  searchCatalog(query: CatalogQuery): Promise<CatalogResult>;
+  getDiagnostics(): Promise<Diagnostics>;
 }
 
 /** Methods a face exposes to the daemon (birpc client functions; server-pushed). */
@@ -44,4 +49,13 @@ export interface FaceBootstrap {
   token: string;
 }
 
-export type { ProjectModel, OperationInfo, Change, ApplyResult, JournalEntry };
+export type {
+  ProjectModel,
+  OperationInfo,
+  Change,
+  ApplyResult,
+  JournalEntry,
+  CatalogQuery,
+  CatalogResult,
+  Diagnostics,
+};
