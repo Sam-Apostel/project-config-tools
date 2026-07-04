@@ -153,7 +153,7 @@ worth a human call):
 ## 6. Composition, precedence & conflicts
 
 - **Multiple packs, explicit order.** A project lists installed opinion packs in
-  `visual-config.config.ts` in priority order.
+  `visual-config.json` in priority order (spec 08).
 - **Later overrides earlier** on the *same* recommendation target (last-wins,
   like `extends`), so a user can layer a personal pack on top of a team one.
 - **Genuine conflicts are surfaced, never auto-resolved.** When two equal-weight
@@ -191,8 +191,11 @@ usable with facts only.
   on Kent’s public guidance, labeled as a community interpretation, `official:
   false`.
 
-Installing any of these is `npm i -D <pack>`; the tool discovers it (same
-mechanism as any plugin) and starts attributing recommendations to that author.
+You install any of these **not** as an npm package but by adding its id to your
+`visual-config.json` — one line, browsed and one-click-added from the in-tool
+marketplace. The tool fetches the pack as *data*, caches it, and starts
+attributing recommendations to that author. Zero `package.json`/`node_modules`
+footprint. Full mechanism: [`08-registry-and-distribution.md`](08-registry-and-distribution.md).
 
 ## 9. Why this is the right call
 

@@ -38,9 +38,13 @@ A plugin is an npm package with two optional halves:
   panels beyond declarative forms. Served by the daemon and loaded as a
   component/iframe (Nuxt-DevTools-style).
 
-Discovery mirrors ESLint/Vite plugins: the daemon auto-loads dependencies whose
-`package.json` carries a `visual-config` field (or the `visual-config-plugin`
-keyword), plus anything listed explicitly in a project’s `visual-config.config.ts`.
+Discovery and loading are covered in full by [`08-registry-and-distribution.md`](08-registry-and-distribution.md).
+In short: plugins are **selected by id** in a small `visual-config.json` and
+loaded either from a **tool-managed location** (default; keeps the project’s
+`package.json`/`node_modules` clean) or, opt-in, as a normal npm dependency
+(`npm:<pkg>` — auto-loaded when its `package.json` carries the `visual-config`
+field / `visual-config-plugin` keyword, the ESLint/Vite-plugin mechanism). The
+`visual-config` manifest below describes the package either way.
 
 ```jsonc
 // a plugin package's package.json
@@ -228,8 +232,8 @@ about that and constrain them:
   a clear message rather than crashing.
 - Contributions are registered synchronously in `setup`; async work (fetching
   catalog data, docs) happens lazily behind the registrars’ resolve functions.
-- Plugins can be enabled/disabled per project in `visual-config.config.ts`; a
-  disabled plugin contributes nothing and loads no code.
+- Plugins can be enabled/disabled per project in `visual-config.json` (spec 08);
+  a disabled plugin contributes nothing and loads no code.
 
 ## 7. Worked example A — the `oxc` plugin
 

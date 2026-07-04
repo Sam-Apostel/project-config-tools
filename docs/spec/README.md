@@ -18,6 +18,7 @@ refine the higher-level docs ([`../ANALYSIS.md`](../ANALYSIS.md),
 | 05 | [MCP & RPC](05-mcp-and-rpc.md) | birpc (UI ⇄ daemon) and the MCP server (agents ⇄ daemon), both as thin projections of the Operation registry. |
 | 06 | [IDE Surface](06-ide-surface.md) | Embedding the panel; the "cleaner workspace" toggle built on IDE-native features only. |
 | 07 | [Opinions](07-opinions.md) | Neutral base (facts only); installable, attributed **opinion packs** (Matt Pocock / Vercel / the TypeScript team / …). |
+| 08 | [Registry & Distribution](08-registry-and-distribution.md) | Finding/browsing plugins & opinions **without npm-package clutter** — selection-as-data, an in-tool marketplace, opinions-as-fetched-data. |
 
 ## The three load-bearing ideas
 

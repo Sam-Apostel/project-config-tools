@@ -85,6 +85,11 @@ Where the "tell me what could be better" intelligence lands. Each item is
   user installs, each attributed to a named author. Ships the diagnostic
   `source` classification and the "install a starting point" picker.
   *([`spec/07-opinions.md`](spec/07-opinions.md).)*
+- **Distribution mechanism (no-clutter loading)** — the `visual-config.json`
+  id-list + `visual-config.lock` + fetch-and-cache resolution, so opinions load
+  as *data* (never npm packages) and plugins can load tool-managed. The full
+  hosted marketplace comes with the public plugin API (Phase 4); this ships the
+  loading half opinions depend on. *([`spec/08-registry-and-distribution.md`](spec/08-registry-and-distribution.md).)*
 - **Changelog + code-aware bump safety** — for every outdated dep, ingest the
   changelog between installed and target, extract breaking changes, and
   cross-reference them against the app's own usage so the UI (and later an agent)
@@ -149,10 +154,14 @@ track alone. See [`spec/02-plugin-api.md`](spec/02-plugin-api.md).
   config UI, swaps) and a `tanstack`-style plugin (docs + testing/dev-server
   panel), built entirely on the public API. Plugin Operations automatically
   appear as MCP tools.
+- **Stand up the hosted marketplace** — the registry index + in-tool browse over
+  the Phase-2 loading mechanism, with verified-author badges. Discovery feels
+  like the package catalog. *([`spec/08-registry-and-distribution.md`](spec/08-registry-and-distribution.md).)*
 
 **Exit criteria:** a third party can add a config editor, a catalog filter, and
-a tool swap for their ecosystem — shipped as an npm package, safe by
-construction, visible in the browser UI, IDE panel, and MCP server.
+a tool swap for their ecosystem — discoverable in the in-tool marketplace,
+installed by a single id (tool-managed or `npm:`), safe by construction, visible
+in the browser UI, IDE panel, and MCP server.
 
 ---
 
@@ -210,8 +219,9 @@ toggle available, native, and clearly labeled as a reversible view convenience.
 
 ## Post-v1 directions
 
-- A **plugin marketplace/registry** and scaffolding (`create-visual-config-plugin`)
-  once the public API (Phase 4) has real adoption.
+- The **hosted marketplace/registry index** + submission/verification flow and
+  scaffolding (`create-visual-config-plugin`), building on the loading mechanism
+  from Phase 2. *([`spec/08-registry-and-distribution.md`](spec/08-registry-and-distribution.md).)*
 - Monorepo-wide views (version alignment, cross-workspace scripts).
 - Deeper supply-chain signals (Socket-style behavioral checks) alongside CVEs.
 - Team/shared config policies (opinionated presets a team can enforce).
