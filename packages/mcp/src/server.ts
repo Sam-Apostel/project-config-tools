@@ -2,7 +2,10 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
+  ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+  type Resource,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { Engine } from '@visual-config/core';
@@ -20,7 +23,7 @@ function toolName(operationId: string): string {
 export function createMcpServer(engine: Engine): Server {
   const server = new Server(
     { name: 'visual-config', version: '0.0.0' },
-    { capabilities: { tools: {} } },
+    { capabilities: { tools: {}, resources: {} } },
   );
 
   const planTools = engine.listOperations().map((op) => ({
@@ -88,6 +91,49 @@ export function createMcpServer(engine: Engine): Server {
       };
     }
   });
+
+  // Read-only project context, so agents can read instead of scraping files.
+  const resources: Resource[] = [
+    {
+      uri: 'project://model',
+      name: 'Project model',
+      description: 'Parsed dependencies, scripts, config files, detected tools.',
+      mimeType: 'application/json',
+    },
+    {
+      uri: 'diagnostics://outdated',
+      name: 'Diagnostics',
+      description: 'Fact-based diagnostics (outdated dependencies).',
+      mimeType: 'application/json',
+    },
+    {
+      uri: 'tsconfig://options',
+      name: 'tsconfig compilerOptions',
+      description: 'The compilerOptions tsconfig.json literally sets.',
+      mimeType: 'application/json',
+    },
+  ];
+
+  server.setRequestHandler(ListResourcesRequestSchema, () => ({ resources }));
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    const { uri } = request.params;
+    const text = await readResource(uri);
+    return { contents: [{ uri, mimeType: 'application/json', text }] };
+  });
+
+  async function readResource(uri: string): Promise<string> {
+    switch (uri) {
+      case 'project://model':
+        return JSON.stringify(engine.getProject(), null, 2);
+      case 'diagnostics://outdated':
+        return JSON.stringify(await engine.getDiagnostics(), null, 2);
+      case 'tsconfig://options':
+        return JSON.stringify(await engine.getTsconfig(), null, 2);
+      default:
+        throw new Error(`Unknown resource: ${uri}`);
+    }
+  }
 
   async function dispatch(name: string, args: Record<string, unknown>): Promise<string> {
     switch (name) {
