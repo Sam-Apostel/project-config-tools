@@ -1,6 +1,6 @@
 {
   "name": "@apostel/visual-config-ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "The React SPA served in the browser and embedded in IDE webviews.",
   "license": "MIT",
