@@ -1,5 +1,12 @@
 # @apostel/visual-config-opinion-ts-strict
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @apostel/visual-config-kit@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes
