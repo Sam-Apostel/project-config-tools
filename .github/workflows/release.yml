@@ -11,7 +11,7 @@ concurrency:
 permissions:
   contents: write # push the Version Packages PR, tags, and GitHub Releases
   pull-requests: write # open/update the Version Packages PR
-  id-token: write # reserved for npm provenance (see NPM_CONFIG_PROVENANCE below)
+  id-token: write # OIDC: authenticates the npm publish via Trusted Publishing (no token)
 
 jobs:
   release:
@@ -29,6 +29,10 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      # Trusted Publishing (OIDC) needs npm CLI >= 11.5.1 to perform the token
+      # exchange; the runner/pnpm-bundled npm may be older.
+      - run: npm install -g npm@latest
+
       - run: pnpm install --frozen-lockfile
 
       # Guard: never publish something that doesn't typecheck, test, or build.
@@ -38,7 +42,8 @@ jobs:
 
       # Opens/updates the "Version Packages" PR when changesets are pending;
       # when that PR is merged (no pending changesets), runs `release` to publish
-      # to npm and cut a GitHub Release per version.
+      # to npm and cut a GitHub Release per version. Publishing authenticates via
+      # OIDC Trusted Publishing (configured per-package on npmjs.com) — no token.
       - name: Create Release PR or publish
         uses: changesets/action@v1
         with:
@@ -48,5 +53,3 @@ jobs:
           title: 'chore(release): version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
