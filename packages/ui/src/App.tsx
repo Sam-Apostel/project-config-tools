@@ -174,6 +174,10 @@ export function App(): JSX.Element {
     ]);
   }, []);
 
+  const stopScript = useCallback(async (taskId: string) => {
+    await rpcRef.current?.stopScript(taskId);
+  }, []);
+
   const confirmPending = useCallback(async () => {
     const connection = rpcRef.current;
     if (!connection || !pending) return;
@@ -324,6 +328,7 @@ export function App(): JSX.Element {
             scripts={project.scripts}
             runs={runs}
             onRun={runScript}
+            onStop={stopScript}
             onPlanAddScript={planAddScript}
           />
         )}
@@ -737,6 +742,7 @@ function Scripts(props: {
   scripts: ScriptEntry[];
   runs: TaskRun[];
   onRun: (name: string) => void;
+  onStop: (taskId: string) => void;
   onPlanAddScript: (name: string, command: string) => void;
 }): JSX.Element {
   const [name, setName] = useState('');
@@ -760,9 +766,15 @@ function Scripts(props: {
               {run?.status === 'running' && <span className="badge">running…</span>}
               {run?.status === 'done' && <span className="badge risk-safe">done</span>}
               {run?.status === 'error' && <span className="badge risk-breaking">failed</span>}
-              <button className="btn small" onClick={() => props.onRun(s.name)}>
-                Run
-              </button>
+              {run?.status === 'running' ? (
+                <button className="btn small" onClick={() => props.onStop(run.taskId)}>
+                  Stop
+                </button>
+              ) : (
+                <button className="btn small" onClick={() => props.onRun(s.name)}>
+                  Run
+                </button>
+              )}
             </div>
           );
         })}
@@ -804,8 +816,24 @@ function Scripts(props: {
 
       {props.runs.map((r) => (
         <div key={r.taskId}>
-          <div className="section-sub mono" style={{ marginTop: 16, marginBottom: 4 }}>
-            {r.script} — {r.status}
+          <div
+            className="section-sub mono"
+            style={{
+              marginTop: 16,
+              marginBottom: 4,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <span>
+              {r.script} — {r.status}
+            </span>
+            {r.status === 'running' && (
+              <button className="btn small" onClick={() => props.onStop(r.taskId)}>
+                Stop
+              </button>
+            )}
           </div>
           <div className="console">{r.output || '(no output yet)'}</div>
         </div>

@@ -21,6 +21,12 @@
   --danger: #e5715f;
   --critical: #c0455e;
   --shadow-2: 0 12px 32px rgba(0, 0, 0, 0.32);
+  /* Terminal font: prefer a locally-installed JetBrains Mono Nerd Font so
+     glyphs/powerline output from scripts render; falls back to plain mono. The
+     "Mono" variant keeps glyphs single-width. */
+  --mono-nerd:
+    'JetBrainsMono Nerd Font Mono', 'JetBrainsMono Nerd Font', 'JetBrains Mono', ui-monospace,
+    SFMono-Regular, Menlo, monospace;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
@@ -241,7 +247,7 @@ input.field:focus {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--mono-nerd);
   font-size: 12px;
   white-space: pre-wrap;
   max-height: 220px;
