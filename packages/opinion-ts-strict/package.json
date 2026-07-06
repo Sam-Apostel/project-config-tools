@@ -1,6 +1,6 @@
 {
   "name": "@apostel/visual-config-opinion-ts-strict",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Example opinion pack: recommends strict TypeScript settings. A community example, not official guidance.",
   "license": "MIT",
