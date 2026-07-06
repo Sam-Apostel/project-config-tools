@@ -6,11 +6,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sam-apostel/project-config-tools.git",
+    "url": "git+https://github.com/Sam-Apostel/project-config-tools.git",
     "directory": "packages/kit"
   },
-  "homepage": "https://github.com/sam-apostel/project-config-tools#readme",
-  "bugs": "https://github.com/sam-apostel/project-config-tools/issues",
+  "homepage": "https://github.com/Sam-Apostel/project-config-tools#readme",
+  "bugs": "https://github.com/Sam-Apostel/project-config-tools/issues",
   "exports": {
     ".": "./src/index.ts"
   },

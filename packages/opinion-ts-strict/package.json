@@ -9,11 +9,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sam-apostel/project-config-tools.git",
+    "url": "git+https://github.com/Sam-Apostel/project-config-tools.git",
     "directory": "packages/opinion-ts-strict"
   },
-  "homepage": "https://github.com/sam-apostel/project-config-tools#readme",
-  "bugs": "https://github.com/sam-apostel/project-config-tools/issues",
+  "homepage": "https://github.com/Sam-Apostel/project-config-tools#readme",
+  "bugs": "https://github.com/Sam-Apostel/project-config-tools/issues",
   "visual-config": {
     "apiVersion": 1,
     "kind": "opinion"
