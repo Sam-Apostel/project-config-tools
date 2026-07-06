@@ -133,7 +133,14 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     token,
     close: async () => {
       taskManager.stopAll();
+      // httpServer.close() waits for open connections to drain; the browser's
+      // live WebSocket would keep it (and the process) alive forever — so on
+      // Ctrl+C the daemon appeared to hang. Hang up clients and destroy any
+      // lingering sockets first so close() actually resolves.
+      for (const client of clients) client.ws.terminate();
+      clients.clear();
       wss.close();
+      httpServer.closeAllConnections?.();
       await new Promise<void>((resolve) => httpServer.close(() => resolve()));
     },
   };
