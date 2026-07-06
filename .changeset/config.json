@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
-  "changelog": ["@changesets/changelog-github", { "repo": "sam-apostel/project-config-tools" }],
+  "changelog": ["@changesets/changelog-github", { "repo": "Sam-Apostel/project-config-tools" }],
   "commit": false,
   "fixed": [["@apostel/visual-config", "@apostel/visual-config-*"]],
   "linked": [],
