@@ -4,13 +4,16 @@ import {
   type ServerResponse,
 } from 'node:http';
 import { randomUUID } from 'node:crypto';
+import { join, resolve } from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { createBirpc, type BirpcReturn } from 'birpc';
 import type { Engine } from '@apostel/visual-config-core';
+import type { ProjectModel } from '@apostel/visual-config-core';
 import type {
   ClientFunctions,
   FaceBootstrap,
   ServerFunctions,
+  WorkspaceInfo,
 } from '@apostel/visual-config-protocol';
 import { TaskManager } from './tasks.js';
 import { serveStatic } from './static.js';
@@ -21,6 +24,11 @@ export interface DaemonOptions {
   uiDir?: string;
   host?: string;
   port?: number;
+  /**
+   * Re-open the engine rooted at an absolute path, for switching the active
+   * workspace member. Omit to disable workspace switching (single-package mode).
+   */
+  openAt?: (root: string) => Promise<Engine>;
 }
 
 export interface Daemon {
@@ -38,7 +46,10 @@ type Client = { rpc: BirpcReturn<ClientFunctions, ServerFunctions>; ws: WebSocke
  * hardening guidance.
  */
 export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
-  const engine = opts.engine;
+  // The engine rooted at the workspace root never changes; `engine` tracks the
+  // currently-active member (starts as the root) and is swapped by setActivePackage.
+  const rootEngine = opts.engine;
+  let engine = opts.engine;
   const host = opts.host ?? '127.0.0.1';
   const token = randomUUID();
   const clients = new Set<Client>();
@@ -47,10 +58,56 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
     for (const client of clients) fn(client.rpc);
   };
 
-  const taskManager = new TaskManager(engine.root, () => engine.getProject().packageManager, {
-    onOutput: (taskId, chunk) => broadcast((c) => c.onTaskOutput(taskId, chunk)),
-    onExit: (taskId, code) => broadcast((c) => c.onTaskExit(taskId, code)),
-  });
+  // Cache opened member engines (keyed by relative dir) so switching back and
+  // forth is instant and each member keeps its own pending/undo state.
+  const engineCache = new Map<string, Engine>();
+  let activeDir = '';
+
+  const workspaceInfo = (): WorkspaceInfo => {
+    const root = rootEngine.getProject();
+    return { rootName: root.name, packages: root.workspacePackages, active: activeDir };
+  };
+
+  /** Switch the active engine to a workspace member dir (relative to root, '' for root). */
+  const setActivePackage = async (dir: string): Promise<ProjectModel> => {
+    const rel = dir
+      .replace(/\\/g, '/')
+      .replace(/^\.?\/?/, '')
+      .replace(/\/$/, '');
+    if (rel === '' || rel === '.') {
+      engine = rootEngine;
+      activeDir = '';
+      broadcast((c) => c.onProjectChanged(engine.getProject()));
+      return engine.getProject();
+    }
+    const member = rootEngine.getProject().workspacePackages.find((p) => p.dir === rel);
+    if (!member) throw new Error(`Unknown workspace package: ${dir}`);
+    if (!opts.openAt) throw new Error('Workspace switching is not enabled for this daemon');
+
+    let next = engineCache.get(rel);
+    if (!next) {
+      // Guard against path escapes: the resolved dir must stay under the root.
+      const abs = resolve(join(rootEngine.root, rel));
+      if (abs !== rootEngine.root && !abs.startsWith(rootEngine.root + '/')) {
+        throw new Error(`Workspace package escapes the project root: ${dir}`);
+      }
+      next = await opts.openAt(abs);
+      engineCache.set(rel, next);
+    }
+    engine = next;
+    activeDir = rel;
+    broadcast((c) => c.onProjectChanged(engine.getProject()));
+    return engine.getProject();
+  };
+
+  const taskManager = new TaskManager(
+    () => engine.root,
+    () => engine.getProject().packageManager,
+    {
+      onOutput: (taskId, chunk) => broadcast((c) => c.onTaskOutput(taskId, chunk)),
+      onExit: (taskId, code) => broadcast((c) => c.onTaskExit(taskId, code)),
+    },
+  );
 
   const httpServer = createHttpServer((req: IncomingMessage, res: ServerResponse) => {
     if (!opts.uiDir) {
@@ -113,6 +170,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       getConfigs: () => engine.getConfigs(),
       getConfig: (path) => engine.getConfig(path),
       getScaffolds: async () => engine.getScaffolds(),
+      getWorkspace: async () => workspaceInfo(),
+      setActivePackage: (dir) => setActivePackage(dir),
     };
 
     const rpc = createBirpc<ClientFunctions, ServerFunctions>(serverFunctions, {

@@ -33,6 +33,9 @@ typecheck + CI):
 - ✅ **Config adapters** — view/edit **Biome / Prettier / ESLint / oxlint / tsconfig**
   as guided forms with curated factual docs; **read-only static views** of JS/TS
   configs (`next.config`, `vite.config`, eslint flat) via `@babel/parser`.
+- ✅ **Monorepo / workspaces** — resolves members from `pnpm-workspace.yaml` or the
+  npm/yarn `workspaces` field (globs, `!`-exclusions) and a **package switcher**
+  re-opens the engine at any member so every view and operation targets it.
 - ✅ **Setup & swaps** — `add-config` scaffolds a tool (Prettier/Biome/oxlint) in one
   reviewed step; **`switch-to-biome`** replaces ESLint + Prettier as a single
   reversible Change (deletes configs, prunes deps, swaps scripts).
@@ -48,8 +51,8 @@ typecheck + CI):
   (example: `@apostel/visual-config-opinion-ts-strict`).
 - ✅ **Release pipeline** — Changesets + GitHub Actions publishing under `@apostel/*`
   via **OIDC Trusted Publishing** (no token), with per-package GitHub Releases.
-- 🔜 Not yet: **monorepo/workspaces**, **lockfile-exact** diagnostics, guided
-  framework-config _editing_ (AST rewrite), a headless **`check`** mode, IDE
+- 🔜 Not yet: **lockfile-exact** diagnostics, cross-workspace version alignment,
+  guided framework-config _editing_ (AST rewrite), a headless **`check`** mode, IDE
   extensions, and the **hosted "point at any repo → diff/PR"** playground.
 
 ---

@@ -102,6 +102,25 @@ a {
   color: var(--text-muted);
   font-size: 13px;
 }
+.workspace-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.workspace-switcher select {
+  font-size: 13px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  max-width: 320px;
+}
+.workspace-switcher select:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
 .rail {
   border-right: 1px solid var(--border);
   padding: 12px 8px;

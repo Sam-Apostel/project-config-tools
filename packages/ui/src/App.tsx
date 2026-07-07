@@ -16,6 +16,7 @@ import type {
   ReleaseNotes,
   ScaffoldStatus,
   TsconfigView,
+  WorkspaceInfo,
 } from '@apostel/visual-config-protocol';
 import { connect, type ServerRpc } from './rpc.js';
 
@@ -42,6 +43,40 @@ type VulnMap = Map<string, VulnInfo[]>;
 type DeprecationMap = Map<string, { message: string; alternative?: string }>;
 type ChangelogMap = Map<string, ReleaseNotes[] | 'loading'>;
 
+/** Split a Diagnostics payload into the three per-dependency lookup maps the UI renders. */
+function mapDiagnostics(items: Diagnostic[]): {
+  outdated: OutdatedMap;
+  vulns: VulnMap;
+  deprecations: DeprecationMap;
+} {
+  const outdated: OutdatedMap = new Map();
+  const vulns: VulnMap = new Map();
+  const deprecations: DeprecationMap = new Map();
+  for (const d of items) {
+    if (d.kind === 'outdated' && d.data) {
+      outdated.set(d.target, {
+        latest: String(d.data.latest),
+        diff: String(d.data.diff),
+        severity: d.severity,
+      });
+    } else if (d.kind === 'vulnerability') {
+      const list = vulns.get(d.target) ?? [];
+      list.push({
+        level: String(d.data?.level ?? d.severity),
+        title: d.message,
+        url: d.data?.url ? String(d.data.url) : undefined,
+      });
+      vulns.set(d.target, list);
+    } else if (d.kind === 'deprecation') {
+      deprecations.set(d.target, {
+        message: d.message,
+        alternative: d.data?.alternative ? String(d.data.alternative) : undefined,
+      });
+    }
+  }
+  return { outdated, vulns, deprecations };
+}
+
 export function App(): JSX.Element {
   const [rpc, setRpc] = useState<ServerRpc | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +94,8 @@ export function App(): JSX.Element {
   const [scaffolds, setScaffolds] = useState<ScaffoldStatus[]>([]);
   const [improvements, setImprovements] = useState<Improvement[]>([]);
   const [bumps, setBumps] = useState<Map<string, BumpAnalysis | 'loading'>>(new Map());
+  const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null);
+  const [switching, setSwitching] = useState(false);
   const rpcRef = useRef<ServerRpc | null>(null);
 
   useEffect(() => {
@@ -86,40 +123,16 @@ export function App(): JSX.Element {
         setConfigs(await connection.getConfigs());
         setScaffolds(await connection.getScaffolds());
         setImprovements(await connection.getImprovements());
+        setWorkspace(await connection.getWorkspace());
         // Diagnostics hit the network; load them without blocking the UI.
         connection
           .getDiagnostics()
           .then((diag) => {
-            const out: OutdatedMap = new Map();
-            const vuln: VulnMap = new Map();
-            const dep: DeprecationMap = new Map();
-            for (const d of diag.items) {
-              if (d.kind === 'outdated' && d.data) {
-                out.set(d.target, {
-                  latest: String(d.data.latest),
-                  diff: String(d.data.diff),
-                  severity: d.severity,
-                });
-              } else if (d.kind === 'vulnerability') {
-                const list = vuln.get(d.target) ?? [];
-                list.push({
-                  level: String(d.data?.level ?? d.severity),
-                  title: d.message,
-                  url: d.data?.url ? String(d.data.url) : undefined,
-                });
-                vuln.set(d.target, list);
-              } else if (d.kind === 'deprecation') {
-                dep.set(d.target, {
-                  message: d.message,
-                  alternative: d.data?.alternative ? String(d.data.alternative) : undefined,
-                });
-              }
-            }
-            if (!closed) {
-              setOutdated(out);
-              setVulns(vuln);
-              setDeprecations(dep);
-            }
+            if (closed) return;
+            const { outdated, vulns, deprecations } = mapDiagnostics(diag.items);
+            setOutdated(outdated);
+            setVulns(vulns);
+            setDeprecations(deprecations);
           })
           .catch(() => undefined);
       })
@@ -138,6 +151,47 @@ export function App(): JSX.Element {
     setScaffolds(await connection.getScaffolds());
     setImprovements(await connection.getImprovements());
   }, []);
+
+  const switchPackage = useCallback(
+    async (dir: string) => {
+      const connection = rpcRef.current;
+      if (!connection || switching) return;
+      setSwitching(true);
+      setError(null);
+      try {
+        const next = await connection.setActivePackage(dir);
+        setProject(next);
+        setWorkspace((prev) => (prev ? { ...prev, active: dir } : prev));
+        // These caches are per-package — drop them so nothing bleeds across members.
+        setPending(null);
+        setOutdated(new Map());
+        setVulns(new Map());
+        setDeprecations(new Map());
+        setChangelogs(new Map());
+        setBumps(new Map());
+        setSection('overview');
+        setJournal(await connection.listJournal());
+        setTsconfig(await connection.getTsconfig());
+        setConfigs(await connection.getConfigs());
+        setScaffolds(await connection.getScaffolds());
+        setImprovements(await connection.getImprovements());
+        connection
+          .getDiagnostics()
+          .then((diag) => {
+            const mapped = mapDiagnostics(diag.items);
+            setOutdated(mapped.outdated);
+            setVulns(mapped.vulns);
+            setDeprecations(mapped.deprecations);
+          })
+          .catch(() => undefined);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setSwitching(false);
+      }
+    },
+    [switching],
+  );
 
   const applyImprovement = useCallback(async (improvement: Improvement) => {
     const connection = rpcRef.current;
@@ -342,7 +396,11 @@ export function App(): JSX.Element {
     <div className="app">
       <div className="topbar">
         <h1>visual-config</h1>
-        <span className="meta mono">{project.name ?? project.root}</span>
+        {workspace && workspace.packages.length > 0 ? (
+          <WorkspaceSwitcher workspace={workspace} switching={switching} onSwitch={switchPackage} />
+        ) : (
+          <span className="meta mono">{project.name ?? project.root}</span>
+        )}
         <span className="meta">·</span>
         <span className="meta">{project.packageManager}</span>
         <span className="meta">·</span>
@@ -468,6 +526,33 @@ export function App(): JSX.Element {
         <DiffSheet change={pending} onCancel={() => setPending(null)} onConfirm={confirmPending} />
       )}
     </div>
+  );
+}
+
+function WorkspaceSwitcher(props: {
+  workspace: WorkspaceInfo;
+  switching: boolean;
+  onSwitch: (dir: string) => void;
+}): JSX.Element {
+  const { workspace } = props;
+  const rootLabel = workspace.rootName ?? 'workspace root';
+  return (
+    <label className="workspace-switcher">
+      <select
+        className="mono"
+        value={workspace.active}
+        disabled={props.switching}
+        onChange={(e) => props.onSwitch(e.target.value)}
+      >
+        <option value="">{rootLabel} (root)</option>
+        {workspace.packages.map((p) => (
+          <option key={p.dir} value={p.dir}>
+            {p.name ?? p.dir}
+          </option>
+        ))}
+      </select>
+      {props.switching && <span className="meta">switching…</span>}
+    </label>
   );
 }
 

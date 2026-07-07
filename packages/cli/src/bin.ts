@@ -107,7 +107,13 @@ async function main(): Promise<void> {
   const plugins = args.plugins ? await discoverPlugins(root) : [];
   const engine = await openProject(root, { plugins });
   const uiDir = resolveUiDir(args.uiDir);
-  const daemon = await startDaemon({ engine, uiDir, host: args.host, port: args.port });
+  // Let the daemon re-open the engine at a workspace member on demand. Each
+  // member discovers its own plugins so a package's local config is honored.
+  const openAt = async (memberRoot: string) =>
+    openProject(memberRoot, {
+      plugins: args.plugins ? await discoverPlugins(memberRoot) : [],
+    });
+  const daemon = await startDaemon({ engine, uiDir, host: args.host, port: args.port, openAt });
   const project = engine.getProject();
 
   console.log('');

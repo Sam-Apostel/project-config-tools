@@ -14,10 +14,21 @@ import type {
   ProjectModel,
   ReleaseNotes,
   ScaffoldInfo,
+  WorkspacePackage,
 } from '@apostel/visual-config-core';
 
 /** A scaffoldable tool plus whether it's already set up in this project. */
 export type ScaffoldStatus = ScaffoldInfo & { present: boolean };
+
+/** The workspace (monorepo) shape: its members and which one is active. */
+export interface WorkspaceInfo {
+  /** The workspace root's package name (or undefined if unnamed). */
+  rootName?: string;
+  /** Member packages resolved from the workspace globs. Empty for a single-package project. */
+  packages: WorkspacePackage[];
+  /** The active member's dir (relative to root), or '' when the root itself is active. */
+  active: string;
+}
 
 /** Result of planning an operation, wrapped so the UI gets structured errors. */
 export interface PlanResult {
@@ -51,6 +62,10 @@ export interface ServerFunctions {
   getConfigs(): Promise<ConfigView[]>;
   getConfig(path: string): Promise<ConfigView | undefined>;
   getScaffolds(): Promise<ScaffoldStatus[]>;
+  /** The workspace members and which one is active (empty members for a single-package project). */
+  getWorkspace(): Promise<WorkspaceInfo>;
+  /** Switch the active workspace member; pass '' to return to the root. Returns the new active project. */
+  setActivePackage(dir: string): Promise<ProjectModel>;
 }
 
 export interface TsconfigView {
@@ -87,4 +102,5 @@ export type {
   ConfigKindSchema,
   ConfigOptionDoc,
   ScaffoldInfo,
+  WorkspacePackage,
 };

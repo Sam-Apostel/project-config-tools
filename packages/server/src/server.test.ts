@@ -50,12 +50,33 @@ async function connectClient(d: Daemon): Promise<BirpcReturn<ServerFunctions, Cl
   );
 }
 
-async function makeDaemon(pkg: object): Promise<Daemon> {
-  const fs = new InMemoryFileSystem({ '/proj/package.json': JSON.stringify(pkg, null, 2) + '\n' });
+function makeRegistry(): OperationRegistry {
   const registry = new OperationRegistry();
   registry.register(addScriptOperation);
-  const engine = await Engine.create({ root: '/proj', fs, registry, runner: new NoopRunner() });
+  return registry;
+}
+
+async function makeDaemon(pkg: object): Promise<Daemon> {
+  const fs = new InMemoryFileSystem({ '/proj/package.json': JSON.stringify(pkg, null, 2) + '\n' });
+  const engine = await Engine.create({
+    root: '/proj',
+    fs,
+    registry: makeRegistry(),
+    runner: new NoopRunner(),
+  });
   return startDaemon({ engine });
+}
+
+async function makeWorkspaceDaemon(files: Record<string, object>): Promise<Daemon> {
+  const fs = new InMemoryFileSystem(
+    Object.fromEntries(
+      Object.entries(files).map(([path, obj]) => [path, JSON.stringify(obj, null, 2) + '\n']),
+    ),
+  );
+  const openAt = (root: string): Promise<Engine> =>
+    Engine.create({ root, fs, registry: makeRegistry(), runner: new NoopRunner() });
+  const engine = await openAt('/proj');
+  return startDaemon({ engine, openAt });
 }
 
 describe('daemon over birpc/ws', () => {
@@ -100,5 +121,45 @@ describe('daemon over birpc/ws', () => {
     const plan = await rpc.planOperation('add-script', { name: '', command: 'x' });
     expect(plan.ok).toBe(false);
     expect(plan.error).toBeTruthy();
+  });
+
+  it('lists workspace members and switches the active package', async () => {
+    daemon = await makeWorkspaceDaemon({
+      '/proj/package.json': { name: 'root', private: true, workspaces: ['packages/*'] },
+      '/proj/packages/core/package.json': { name: '@acme/core', scripts: { build: 'tsc' } },
+      '/proj/packages/ui/package.json': { name: '@acme/ui' },
+    });
+    const rpc = await connectClient(daemon);
+
+    const ws = await rpc.getWorkspace();
+    expect(ws.rootName).toBe('root');
+    expect(ws.active).toBe('');
+    expect(ws.packages.map((p) => p.dir)).toEqual(['packages/core', 'packages/ui']);
+
+    // Switching makes getProject reflect the member, and edits target the member.
+    const active = await rpc.setActivePackage('packages/core');
+    expect(active.name).toBe('@acme/core');
+    expect((await rpc.getWorkspace()).active).toBe('packages/core');
+
+    const plan = await rpc.planOperation('add-script', { name: 'test', command: 'vitest' });
+    const applied = await rpc.applyChange(plan.change!.id);
+    expect(applied.ok).toBe(true);
+
+    // Back at the root, the member's edit is not visible on the root package.
+    const root = await rpc.setActivePackage('');
+    expect(root.name).toBe('root');
+    expect(root.scripts.find((s) => s.name === 'test')).toBeUndefined();
+  });
+
+  it('rejects switching to an unknown workspace package', async () => {
+    daemon = await makeWorkspaceDaemon({
+      '/proj/package.json': { name: 'root', workspaces: ['packages/*'] },
+      '/proj/packages/core/package.json': { name: '@acme/core' },
+    });
+    const rpc = await connectClient(daemon);
+    // The message is lost over birpc (Error.message is non-enumerable), but the
+    // call must reject rather than silently switching to a non-existent member.
+    await expect(rpc.setActivePackage('packages/nope')).rejects.toBeTruthy();
+    expect((await rpc.getWorkspace()).active).toBe('');
   });
 });

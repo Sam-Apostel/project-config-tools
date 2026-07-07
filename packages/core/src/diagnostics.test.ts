@@ -32,6 +32,7 @@ function project(deps: ProjectModel['dependencies']): ProjectModel {
     configFiles: [],
     detected: [],
     workspaces: [],
+    workspacePackages: [],
   };
 }
 
