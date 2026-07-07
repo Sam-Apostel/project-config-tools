@@ -12,7 +12,7 @@ export class TaskManager {
   private seq = 0;
 
   constructor(
-    private readonly root: string,
+    private readonly getRoot: () => string,
     private readonly getPackageManager: () => PackageManager,
     private readonly events: TaskEvents,
   ) {}
@@ -21,7 +21,7 @@ export class TaskManager {
     const taskId = `task_${++this.seq}`;
     const pm = this.getPackageManager();
     const child = spawn(pm, ['run', script], {
-      cwd: this.root,
+      cwd: this.getRoot(),
       shell: false,
       env: { ...process.env, FORCE_COLOR: '1' },
     });

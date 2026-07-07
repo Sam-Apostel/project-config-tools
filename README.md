@@ -14,8 +14,8 @@ already have.
 > health (outdated **+ vulnerabilities + deprecations**), the config editor for
 > JSON configs, tool scaffolding, a one-click **Switch to Biome**, changelog
 > reading, an MCP server with in-session app UI, and the plugin system. See
-> [what works today](#what-works-today). Still intended-but-not-built: monorepo
-> support, framework-config forms, IDE panels — see [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> [what works today](#what-works-today). Still intended-but-not-built:
+> framework-config forms, IDE panels — see [`docs/ROADMAP.md`](docs/ROADMAP.md).
 >
 > _`visual-config` is a descriptive package name, not a brand — see [`docs/DESIGN-LANGUAGE.md`](docs/DESIGN-LANGUAGE.md)._
 
@@ -50,6 +50,8 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
   `vite.config`, eslint flat) via static extraction
 - 🟢 **Set up a tool** in one step (scaffold Prettier / Biome / oxlint), and a one-click
   **Switch to Biome** that replaces ESLint + Prettier — both fully reversible
+- 🟢 **Monorepo aware** — reads members from `pnpm-workspace.yaml` or the npm/yarn
+  `workspaces` field; a **package switcher** points every view and operation at any member
 - 🟢 **Run scripts** as buttons with streamed output and a **Stop** control
 - 🟢 The **Diff Sheet** — every mutation previewed and confirmed, with **undo**
 - 🟢 **MCP server** (`visual-config mcp`) exposing every operation as an agent tool, plus
@@ -61,7 +63,7 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
 Everything writes through a **format- and comment-preserving** layer; files stay the only
 source of truth. Published under `@apostel/*` via an automated OIDC pipeline.
 
-🟡 **Not yet:** monorepo/workspace support, lockfile-exact diagnostics, guided
+🟡 **Not yet:** lockfile-exact diagnostics, cross-workspace version alignment, guided
 framework-config _editing_, a headless `check` mode, and IDE panels — see the
 [roadmap](docs/ROADMAP.md).
 

@@ -1,4 +1,5 @@
-import { join } from 'node:path';
+import { basename, dirname, join, relative, sep } from 'node:path';
+import { matchesAnyGlob } from '../scope.js';
 import type {
   ConfigFileRef,
   DependencyEntry,
@@ -6,6 +7,7 @@ import type {
   PackageManager,
   ProjectModel,
   ScriptEntry,
+  WorkspacePackage,
 } from '../types.js';
 
 async function detectPackageManager(fs: FileSystem, root: string): Promise<PackageManager> {
@@ -63,6 +65,74 @@ function normalizeWorkspaces(workspaces: unknown): string[] {
   return [];
 }
 
+/**
+ * Extract the `packages:` list from a pnpm-workspace.yaml. Deliberately a small,
+ * dependency-free reader for the one shape that matters (a `packages:` block of
+ * `- glob` items, quoted or not, comments allowed) rather than a full YAML parser.
+ */
+function parsePnpmWorkspaceGlobs(yaml: string): string[] {
+  const lines = yaml.split(/\r?\n/);
+  const globs: string[] = [];
+  let inPackages = false;
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/#.*$/, '');
+    if (/^packages:\s*$/.test(line.trimEnd())) {
+      inPackages = true;
+      continue;
+    }
+    if (!inPackages) continue;
+    const item = line.match(/^\s*-\s*(.+?)\s*$/);
+    if (item?.[1]) {
+      globs.push(item[1].replace(/^['"]|['"]$/g, ''));
+      continue;
+    }
+    // A non-list, non-blank line ends the block (e.g. the next top-level key).
+    if (line.trim() !== '') break;
+  }
+  return globs;
+}
+
+function toPosix(p: string): string {
+  return sep === '/' ? p : p.split(sep).join('/');
+}
+
+/**
+ * Resolve workspace globs to the member packages that actually exist on disk by
+ * walking for `package.json` files and matching their directory against the
+ * globs. Supports pnpm/yarn `!`-prefixed exclusion patterns.
+ */
+async function resolveWorkspacePackages(
+  fs: FileSystem,
+  root: string,
+  globs: string[],
+): Promise<WorkspacePackage[]> {
+  if (globs.length === 0) return [];
+  const include = globs.filter((g) => !g.startsWith('!'));
+  const exclude = globs.filter((g) => g.startsWith('!')).map((g) => g.slice(1));
+  if (include.length === 0) return [];
+
+  const packages: WorkspacePackage[] = [];
+  for (const file of await fs.walk(root)) {
+    if (basename(file) !== 'package.json') continue;
+    const dirAbs = dirname(file);
+    if (dirAbs === root) continue; // the root package.json is not a member
+    const rel = toPosix(relative(root, dirAbs));
+    if (!matchesAnyGlob(rel, include)) continue;
+    if (exclude.length > 0 && matchesAnyGlob(rel, exclude)) continue;
+
+    let name: string | undefined;
+    try {
+      const parsed = JSON.parse(await fs.readFile(file)) as { name?: unknown };
+      if (typeof parsed.name === 'string') name = parsed.name;
+    } catch {
+      // A member with unreadable package.json is still a member; leave name blank.
+    }
+    packages.push({ name, dir: rel });
+  }
+  packages.sort((a, b) => a.dir.localeCompare(b.dir));
+  return packages;
+}
+
 interface RawPackageJson {
   name?: string;
   version?: string;
@@ -114,6 +184,21 @@ export async function detectProject(fs: FileSystem, root: string): Promise<Proje
     }
   }
 
+  // Workspace globs come from package.json (npm/yarn) or pnpm-workspace.yaml (pnpm).
+  let workspaces = normalizeWorkspaces(pkg.workspaces);
+  const pnpmWorkspacePath = join(root, 'pnpm-workspace.yaml');
+  if (workspaces.length === 0 && (await fs.exists(pnpmWorkspacePath))) {
+    workspaces = parsePnpmWorkspaceGlobs(await fs.readFile(pnpmWorkspacePath));
+    if (workspaces.length > 0) {
+      configFiles.push({
+        path: 'pnpm-workspace.yaml',
+        kind: 'pnpm-workspace',
+        format: 'yaml',
+        editable: 'read-only',
+      });
+    }
+  }
+
   return {
     root,
     packageManager: await detectPackageManager(fs, root),
@@ -125,6 +210,7 @@ export async function detectProject(fs: FileSystem, root: string): Promise<Proje
     dependencies,
     configFiles,
     detected: [],
-    workspaces: normalizeWorkspaces(pkg.workspaces),
+    workspaces,
+    workspacePackages: await resolveWorkspacePackages(fs, root, workspaces),
   };
 }

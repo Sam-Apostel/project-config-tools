@@ -149,6 +149,17 @@ export interface DetectedTool {
   pluginId?: string;
 }
 
+/**
+ * A member package of a workspace/monorepo, resolved from the workspace globs
+ * (pnpm-workspace.yaml or the package.json `workspaces` field) to a real dir.
+ */
+export interface WorkspacePackage {
+  /** The member's package.json `name`, if it declares one. */
+  name?: string;
+  /** Directory relative to the workspace root, using `/` separators (e.g. `packages/core`). */
+  dir: string;
+}
+
 export interface ProjectModel {
   root: string;
   packageManager: PackageManager;
@@ -160,7 +171,10 @@ export interface ProjectModel {
   dependencies: DependencyEntry[];
   configFiles: ConfigFileRef[];
   detected: DetectedTool[];
+  /** Raw workspace globs (npm/yarn `workspaces` or pnpm-workspace.yaml). */
   workspaces: string[];
+  /** Member packages resolved from {@link workspaces} to real directories. */
+  workspacePackages: WorkspacePackage[];
 }
 
 // ---------------------------------------------------------------------------
