@@ -1,6 +1,6 @@
 {
   "name": "@apostel/visual-config-kit",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "description": "Author-facing helpers for building visual-config plugins.",
   "license": "MIT",
