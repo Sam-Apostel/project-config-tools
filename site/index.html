@@ -874,7 +874,7 @@
       <section class="hero">
         <div class="wrap">
           <div class="hero-badges">
-            <span class="badge info">v0.1.2 on npm</span>
+            <span class="badge info">v0.5 on npm</span>
             <span class="badge warn">early alpha</span>
             <span class="badge">MIT</span>
             <span class="badge">TypeScript · ESM · Node ≥20</span>
@@ -1050,10 +1050,11 @@
       <!-- ——————————————————— what works today ——————————————————— -->
       <section id="today">
         <div class="wrap">
-          <h2>What works today, v0.1.x.</h2>
+          <h2>What works today, v0.5.x.</h2>
           <p class="lede">
-            Early alpha, published to npm. The spine is real and green (typecheck + tests in CI);
-            the vision docs describe the rest.
+            Alpha, published to npm and green in CI. Dependency health, a config editor, tool
+            scaffolding, a one-click Biome swap, changelog reading, and an MCP server all ship today
+            — the vision docs describe what's still ahead (monorepos, IDE panels).
           </p>
           <div class="facts">
             <div class="fact">
@@ -1067,8 +1068,15 @@
             <div class="fact">
               <span class="dot">●</span
               ><span
-                ><b>Dependencies</b>: outdated facts from the registry, Upgrade / Upgrade&nbsp;all /
-                Remove</span
+                ><b>Dependency health</b>: outdated, <b>vulnerabilities</b> (npm advisory DB) and
+                <b>deprecations</b> with the maintainer's suggested alternative</span
+              >
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span
+                ><b>Changelog &amp; bump safety</b>: read release notes between versions, breaking
+                changes cross-referenced against how <em>your</em> code uses the package</span
               >
             </div>
             <div class="fact">
@@ -1077,7 +1085,17 @@
             </div>
             <div class="fact">
               <span class="dot">●</span
-              ><span><b>TypeScript</b>: view compilerOptions, toggle them as reviewed edits</span>
+              ><span
+                ><b>Config editor</b>: Biome / Prettier / ESLint / oxlint / tsconfig as guided forms
+                with inline docs; read-only static views of next.config / vite.config</span
+              >
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span
+                ><b>Setup &amp; swaps</b>: scaffold a tool in one step, or one-click
+                <b>Switch to Biome</b> (replaces ESLint + Prettier) — fully reversible</span
+              >
             </div>
             <div class="fact">
               <span class="dot">●</span
@@ -1092,7 +1110,8 @@
             <div class="fact">
               <span class="dot">●</span
               ><span
-                ><b>MCP server</b>: every operation as an agent tool, plus read-only resources</span
+                ><b>MCP server</b>: every operation as an agent tool, read-only resources, and an
+                <b>in-session app UI</b> (MCP Apps / SEP-1865)</span
               >
             </div>
             <div class="fact">

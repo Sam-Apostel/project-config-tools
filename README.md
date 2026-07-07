@@ -9,11 +9,13 @@ already have.
 </p>
 
 > [!IMPORTANT]
-> **Status: early alpha — published to npm.** Try it in any JS/TS project:
-> `npx @apostel/visual-config`. The core spine works today: browser UI + daemon,
-> the Operation→Change→undo engine, a package catalog, outdated diagnostics, and
-> an MCP server. Not everything described below is built yet — see
-> [what works today](#what-works-today) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status: alpha, published to npm.** Try it in any JS/TS project:
+> `npx @apostel/visual-config`. A lot works today — the browser UI, dependency
+> health (outdated **+ vulnerabilities + deprecations**), the config editor for
+> JSON configs, tool scaffolding, a one-click **Switch to Biome**, changelog
+> reading, an MCP server with in-session app UI, and the plugin system. See
+> [what works today](#what-works-today). Still intended-but-not-built: monorepo
+> support, framework-config forms, IDE panels — see [`docs/ROADMAP.md`](docs/ROADMAP.md).
 >
 > _`visual-config` is a descriptive package name, not a brand — see [`docs/DESIGN-LANGUAGE.md`](docs/DESIGN-LANGUAGE.md)._
 
@@ -33,23 +35,35 @@ map of every package, and the roadmap — all sourced from [`site/`](site/).
 
 ## What works today
 
-Running from source (see [Development](#run-it-from-source-development)):
+Install-free: `npx @apostel/visual-config` in any JS/TS project.
 
-- 🟢 `visual-config` boots a local daemon and opens a **React UI** in the browser
-- 🟢 **Overview** (inline-editable name/version/description), **Dependencies**,
-  **Scripts**, **History** over your real `package.json`
+- 🟢 A local daemon + **React UI**: **Overview** (inline-editable name/version/description),
+  **Dependencies**, **Config**, **TypeScript**, **Catalog**, **Scripts**, **History**
+- 🟢 **Dependency health** — facts from the registry: **outdated**, **vulnerabilities**
+  (npm advisory DB), and **deprecations** (with the maintainer's suggested alternative)
+- 🟢 **Changelog viewer** — read GitHub release notes between your version and latest, with
+  breaking changes highlighted; plus **bump-safety analysis** that cross-references those
+  breaking changes against how _your_ code actually uses the package
 - 🟢 **Package catalog** — search the npm registry, install by selecting (no free-typed name)
-- 🟢 **Outdated diagnostics** — facts from the registry, with **Upgrade** and **Upgrade all**
-- 🟢 **TypeScript** — view `compilerOptions` and toggle them as reviewed edits
-- 🟢 **Run scripts** as buttons with streamed output
+- 🟢 **Config editor** — view & edit **Biome / Prettier / ESLint / oxlint / tsconfig** as
+  guided forms with inline docs; **read-only views** of JS/TS configs (`next.config`,
+  `vite.config`, eslint flat) via static extraction
+- 🟢 **Set up a tool** in one step (scaffold Prettier / Biome / oxlint), and a one-click
+  **Switch to Biome** that replaces ESLint + Prettier — both fully reversible
+- 🟢 **Run scripts** as buttons with streamed output and a **Stop** control
 - 🟢 The **Diff Sheet** — every mutation previewed and confirmed, with **undo**
-- 🟢 Operations: add/remove script, install/remove/upgrade dependency, set tsconfig option, set package field
-- 🟢 **MCP server** (`visual-config mcp`) exposing the same operations to agents
-- 🟢 **Plugin system** — built-ins load as a plugin; third parties add operations + detectors (`@apostel/visual-config-kit`)
-- 🟡 Next up: opinions, migrations (changelog + safety), more config adapters, publish flow, IDE panels
+- 🟢 **MCP server** (`visual-config mcp`) exposing every operation as an agent tool, plus
+  read-only resources and an **in-session app UI** (MCP Apps / SEP-1865); `init-mcp`
+  registers it for teammates and cloud agents
+- 🟢 **Plugin system** + **attributed opinion packs** — the neutral base ships only facts;
+  taste comes from packs you install (`@apostel/visual-config-kit`)
 
-Everything writes through a **format- and comment-preserving** layer, and the
-files stay the only source of truth.
+Everything writes through a **format- and comment-preserving** layer; files stay the only
+source of truth. Published under `@apostel/*` via an automated OIDC pipeline.
+
+🟡 **Not yet:** monorepo/workspace support, lockfile-exact diagnostics, guided
+framework-config _editing_, a headless `check` mode, and IDE panels — see the
+[roadmap](docs/ROADMAP.md).
 
 ---
 
