@@ -1,5 +1,24 @@
 # @apostel/visual-config-ui
 
+## 0.4.0
+
+### Minor Changes
+
+- [#14](https://github.com/Sam-Apostel/project-config-tools/pull/14) [`4546f0d`](https://github.com/Sam-Apostel/project-config-tools/commit/4546f0d7a753565791c38c79c51c10c50a8d7ebf) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - One-click tooling swap: **Switch to Biome**.
+
+  A new `switch-to-biome` operation replaces ESLint + Prettier with Biome in a single
+  previewed, reversible Change: it creates `biome.json`, deletes the detected
+  ESLint/Prettier config files, removes their dependencies and scripts from
+  `package.json`, adds Biome's scripts, and installs Biome (package-manager-aware) +
+  prunes the removed deps. Rule/format _settings_ are not translated — Biome starts on
+  its defaults, called out on the Change.
+
+  - Risk `breaking`, but fully previewed as a diff and reversible via the journal
+    (undo restores the deleted configs, deps, and scripts).
+  - The browser UI's Config section shows a **Switch to Biome** action when ESLint or
+    Prettier is present and Biome isn't.
+  - Agents get `plan_switch_to_biome`.
+
 ## 0.3.0
 
 ### Minor Changes
