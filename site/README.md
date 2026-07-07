@@ -12,6 +12,15 @@ keep them in sync), and follows [`docs/DESIGN-LANGUAGE.md`](../docs/DESIGN-LANGU
 dark as the reference mode, light as a peer (theme toggle in the header), mono for
 literal values, status never conveyed by color alone.
 
+The page is kept clean against [impeccable.style](https://impeccable.style/)'s
+anti-pattern detector (`npx impeccable detect site/index.html`). Its one
+remaining finding, Inter as an "overused font", is deliberate:
+the design language commits to Inter, and identity-preservation wins over
+novelty. If you edit the page: no uppercase tracked eyebrow labels above
+sections, no identical card grids, AA contrast in both themes (`--text-faint`
+is for the product UI's placeholders, not for prose on this page), and go easy
+on em-dashes.
+
 ## Who the page talks to
 
 Each section is aimed at a specific audience with a specific hook:
