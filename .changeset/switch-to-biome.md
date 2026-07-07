@@ -9,7 +9,7 @@ A new `switch-to-biome` operation replaces ESLint + Prettier with Biome in a sin
 previewed, reversible Change: it creates `biome.json`, deletes the detected
 ESLint/Prettier config files, removes their dependencies and scripts from
 `package.json`, adds Biome's scripts, and installs Biome (package-manager-aware) +
-prunes the removed deps. Rule/format *settings* are not translated — Biome starts on
+prunes the removed deps. Rule/format _settings_ are not translated — Biome starts on
 its defaults, called out on the Change.
 
 - Risk `breaking`, but fully previewed as a diff and reversible via the journal
