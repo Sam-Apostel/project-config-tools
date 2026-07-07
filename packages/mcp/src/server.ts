@@ -121,6 +121,18 @@ export function createMcpServer(engine: Engine): Server {
         },
       },
     },
+    {
+      name: 'get_config',
+      description:
+        'Read editable config files (Biome, Prettier, ESLint, oxlint, tsconfig, …): their current values plus documented options. Pass a path for one, omit for all present configs. Edit with plan_set_config_value / plan_remove_config_value. Read-only.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          path: { type: 'string', description: 'A config file path; omit to list all.' },
+        },
+      },
+    },
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -225,6 +237,12 @@ export function createMcpServer(engine: Engine): Server {
             args.from ? String(args.from) : undefined,
             args.to ? String(args.to) : undefined,
           ),
+          null,
+          2,
+        );
+      case 'get_config':
+        return JSON.stringify(
+          args.path ? await engine.getConfig(String(args.path)) : await engine.getConfigs(),
           null,
           2,
         );

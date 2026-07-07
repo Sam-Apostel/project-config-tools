@@ -17,6 +17,7 @@ import { NodeCommandRunner, type CommandRunner, type RunOptions } from './runner
 import { NpmRegistry, type Registry } from './registry/npm.js';
 import { searchCatalog, type CatalogQuery, type CatalogResult } from './catalog.js';
 import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
+import { configSchema, type ConfigView } from './config/schema.js';
 import { scanUsage } from './migration/usage.js';
 import { analyzeBump } from './migration/analyze.js';
 import { GithubChangelogSource } from './migration/changelog.js';
@@ -234,6 +235,37 @@ export class Engine {
       }
     }
     return out;
+  }
+
+  /** Read views of every editable JSON/JSONC config file present in the project. */
+  async getConfigs(): Promise<ConfigView[]> {
+    const editable = this.project.configFiles.filter(
+      (f) => f.editable === 'full' && (f.format === 'json' || f.format === 'jsonc'),
+    );
+    const views = await Promise.all(editable.map((f) => this.getConfig(f.path)));
+    return views.filter((v): v is ConfigView => v !== undefined);
+  }
+
+  /** A read view of one config file (parsed values + documented options). */
+  async getConfig(path: string): Promise<ConfigView | undefined> {
+    const ref = this.project.configFiles.find((f) => f.path === path);
+    if (!ref) return undefined;
+    let values: Record<string, unknown> = {};
+    try {
+      const text = await this.fs.readFile(join(this.root, path));
+      const parsed = parseJsonc(text) as Record<string, unknown> | undefined;
+      if (parsed && typeof parsed === 'object') values = parsed;
+    } catch {
+      /* unreadable / not present — empty view */
+    }
+    return {
+      path,
+      kind: ref.kind,
+      format: ref.format,
+      present: true,
+      values,
+      schema: configSchema(ref.kind),
+    };
   }
 
   /** The compilerOptions this project's tsconfig.json literally sets (owned view). */

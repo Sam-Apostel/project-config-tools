@@ -8,6 +8,8 @@ import { setTsconfigOptionOperation } from './operations/set-tsconfig-option.js'
 import { setPackageFieldOperation } from './operations/set-package-field.js';
 import { upgradeDependenciesOperation } from './operations/upgrade-dependencies.js';
 import { addMcpConfigOperation } from './operations/add-mcp-config.js';
+import { setConfigValueOperation } from './operations/set-config-value.js';
+import { removeConfigValueOperation } from './operations/remove-config-value.js';
 import { homedir } from 'node:os';
 import { join as joinPath, resolve as resolvePath } from 'node:path';
 import { NodeFileSystem } from './fs.js';
@@ -43,6 +45,24 @@ export {
   type AddMcpConfigInput,
   type McpClient,
 } from './operations/add-mcp-config.js';
+export {
+  setConfigValueOperation,
+  type SetConfigValueInput,
+} from './operations/set-config-value.js';
+export {
+  removeConfigValueOperation,
+  type RemoveConfigValueInput,
+} from './operations/remove-config-value.js';
+export {
+  configSchema,
+  knownJsonConfig,
+  KNOWN_JSON_CONFIGS,
+  CONFIG_WRITE_SCOPE,
+  type ConfigView,
+  type ConfigKindSchema,
+  type ConfigOptionDoc,
+  type KnownJsonConfig,
+} from './config/schema.js';
 export { Journal, type JournalEntry, type Actor } from './journal.js';
 export { NodeFileSystem, InMemoryFileSystem } from './fs.js';
 export {
@@ -120,6 +140,8 @@ export const builtinOperations: Operation<unknown>[] = [
   setPackageFieldOperation as Operation<unknown>,
   upgradeDependenciesOperation as Operation<unknown>,
   addMcpConfigOperation as Operation<unknown>,
+  setConfigValueOperation as Operation<unknown>,
+  removeConfigValueOperation as Operation<unknown>,
 ];
 
 /**

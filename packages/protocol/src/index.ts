@@ -4,6 +4,9 @@ import type {
   CatalogQuery,
   CatalogResult,
   Change,
+  ConfigKindSchema,
+  ConfigOptionDoc,
+  ConfigView,
   Diagnostics,
   Improvement,
   JournalEntry,
@@ -41,6 +44,8 @@ export interface ServerFunctions {
   getImprovements(): Promise<Improvement[]>;
   analyzeBump(pkg: string, to?: string): Promise<BumpAnalysis>;
   getChangelog(name: string, from?: string, to?: string): Promise<ReleaseNotes[]>;
+  getConfigs(): Promise<ConfigView[]>;
+  getConfig(path: string): Promise<ConfigView | undefined>;
 }
 
 export interface TsconfigView {
@@ -73,4 +78,7 @@ export type {
   Improvement,
   BumpAnalysis,
   ReleaseNotes,
+  ConfigView,
+  ConfigKindSchema,
+  ConfigOptionDoc,
 };

@@ -9,11 +9,24 @@ import type {
   ProjectModel,
   ScriptEntry,
 } from '@apostel/visual-config-core';
-import type { BumpAnalysis, ReleaseNotes, TsconfigView } from '@apostel/visual-config-protocol';
+import type {
+  BumpAnalysis,
+  ConfigOptionDoc,
+  ConfigView,
+  ReleaseNotes,
+  TsconfigView,
+} from '@apostel/visual-config-protocol';
 import { connect, type ServerRpc } from './rpc.js';
 
 type Section =
-  'overview' | 'suggestions' | 'dependencies' | 'catalog' | 'typescript' | 'scripts' | 'history';
+  | 'overview'
+  | 'suggestions'
+  | 'dependencies'
+  | 'catalog'
+  | 'typescript'
+  | 'config'
+  | 'scripts'
+  | 'history';
 
 interface TaskRun {
   taskId: string;
@@ -41,6 +54,7 @@ export function App(): JSX.Element {
   const [deprecations, setDeprecations] = useState<DeprecationMap>(new Map());
   const [changelogs, setChangelogs] = useState<ChangelogMap>(new Map());
   const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
+  const [configs, setConfigs] = useState<ConfigView[]>([]);
   const [improvements, setImprovements] = useState<Improvement[]>([]);
   const [bumps, setBumps] = useState<Map<string, BumpAnalysis | 'loading'>>(new Map());
   const rpcRef = useRef<ServerRpc | null>(null);
@@ -67,6 +81,7 @@ export function App(): JSX.Element {
         setProject(await connection.getProject());
         setJournal(await connection.listJournal());
         setTsconfig(await connection.getTsconfig());
+        setConfigs(await connection.getConfigs());
         setImprovements(await connection.getImprovements());
         // Diagnostics hit the network; load them without blocking the UI.
         connection
@@ -116,6 +131,7 @@ export function App(): JSX.Element {
     if (!connection) return;
     setJournal(await connection.listJournal());
     setTsconfig(await connection.getTsconfig());
+    setConfigs(await connection.getConfigs());
     setImprovements(await connection.getImprovements());
   }, []);
 
@@ -136,6 +152,24 @@ export function App(): JSX.Element {
     if (!connection) return;
     setError(null);
     const result = await connection.planOperation('set-tsconfig-option', { key, value });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the change.');
+  }, []);
+
+  const planSetConfig = useCallback(async (path: string, key: string, value: unknown) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('set-config-value', { path, key, value });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the change.');
+  }, []);
+
+  const planRemoveConfig = useCallback(async (path: string, key: string) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('remove-config-value', { path, key });
     if (result.ok && result.change) setPending(result.change);
     else setError(result.error ?? 'Could not plan the change.');
   }, []);
@@ -276,6 +310,7 @@ export function App(): JSX.Element {
     dependencies: deps.length,
     catalog: 0,
     typescript: 0,
+    config: configs.length,
     scripts: project.scripts.length,
     history: journal.filter((j) => !j.undone).length,
   };
@@ -322,6 +357,14 @@ export function App(): JSX.Element {
             label="TypeScript"
             active={section === 'typescript'}
             onClick={() => setSection('typescript')}
+          />
+        )}
+        {configs.length > 0 && (
+          <RailButton
+            label="Config"
+            count={configs.length}
+            active={section === 'config'}
+            onClick={() => setSection('config')}
           />
         )}
         <RailButton
@@ -376,6 +419,9 @@ export function App(): JSX.Element {
         )}
         {section === 'typescript' && tsconfig && (
           <TypeScriptView tsconfig={tsconfig} onSet={planSetTsconfig} />
+        )}
+        {section === 'config' && (
+          <ConfigSection configs={configs} onSet={planSetConfig} onRemove={planRemoveConfig} />
         )}
         {section === 'scripts' && (
           <Scripts
@@ -877,6 +923,171 @@ function TypeScriptView(props: {
           <div className="empty">No compilerOptions set in tsconfig.json.</div>
         )}
       </div>
+    </>
+  );
+}
+
+function getNested(values: Record<string, unknown>, key: string): unknown {
+  return key.split('.').reduce<unknown>((o, k) => {
+    return o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined;
+  }, values);
+}
+
+function ConfigOptionRow(props: {
+  opt: ConfigOptionDoc;
+  current: unknown;
+  onSet: (value: unknown) => void;
+  onUnset: () => void;
+}): JSX.Element {
+  const { opt, current } = props;
+  const isSet = current !== undefined;
+  const [draft, setDraft] = useState('');
+  return (
+    <div className="row" style={{ flexWrap: 'wrap' }}>
+      <div className="grow">
+        <div className="name">{opt.key}</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+          {opt.description}
+          {opt.default !== undefined && ` (default: ${JSON.stringify(opt.default)})`}
+        </div>
+      </div>
+      <span className={`badge ${current === true ? 'risk-safe' : ''}`}>
+        {isSet ? JSON.stringify(current) : 'unset'}
+      </span>
+      {opt.type === 'boolean' && (
+        <button className="btn small" onClick={() => props.onSet(current !== true)}>
+          Set {current === true ? 'false' : 'true'}
+        </button>
+      )}
+      {opt.type === 'enum' && (
+        <select
+          className="field"
+          value={typeof current === 'string' ? current : ''}
+          onChange={(e) => props.onSet(e.target.value)}
+        >
+          <option value="" disabled>
+            choose…
+          </option>
+          {(opt.values ?? []).map((v) => (
+            <option key={v} value={v}>
+              {v}
+            </option>
+          ))}
+        </select>
+      )}
+      {(opt.type === 'number' || opt.type === 'string') && (
+        <>
+          <input
+            className="field"
+            style={{ width: 120 }}
+            placeholder={isSet ? String(current) : opt.type}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          <button
+            className="btn small"
+            disabled={!draft.trim()}
+            onClick={() => {
+              props.onSet(opt.type === 'number' ? Number(draft) : draft);
+              setDraft('');
+            }}
+          >
+            Set
+          </button>
+        </>
+      )}
+      {isSet && (
+        <button className="btn small" onClick={props.onUnset}>
+          Unset
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ConfigCard(props: {
+  config: ConfigView;
+  onSet: (path: string, key: string, value: unknown) => void;
+  onRemove: (path: string, key: string) => void;
+}): JSX.Element {
+  const { path, kind, values, schema } = props.config;
+  const documented = new Set(schema?.options.map((o) => o.key) ?? []);
+  const otherKeys = Object.keys(values).filter((k) => !documented.has(k));
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <h3
+        style={{ fontSize: 15, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}
+      >
+        {schema?.title ?? kind}
+        <span className="name" style={{ color: 'var(--text-faint)', fontWeight: 400 }}>
+          {path}
+        </span>
+        {schema?.docsUrl && (
+          <a
+            href={schema.docsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="changelog-link"
+            style={{ marginLeft: 'auto' }}
+          >
+            docs ↗
+          </a>
+        )}
+      </h3>
+      <div className="card">
+        {schema?.options.map((opt) => (
+          <ConfigOptionRow
+            key={opt.key}
+            opt={opt}
+            current={getNested(values, opt.key)}
+            onSet={(v) => props.onSet(path, opt.key, v)}
+            onUnset={() => props.onRemove(path, opt.key)}
+          />
+        ))}
+        {!schema && (
+          <div className="empty">No documented options for “{kind}” yet — raw values below.</div>
+        )}
+      </div>
+      {otherKeys.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <div className="section-sub" style={{ margin: '0 0 4px' }}>
+            Other keys set in this file
+          </div>
+          <div className="card">
+            {otherKeys.map((k) => (
+              <div className="row" key={k}>
+                <span className="name grow">{k}</span>
+                <span className="name" style={{ color: 'var(--text-muted)' }}>
+                  {JSON.stringify(values[k])}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConfigSection(props: {
+  configs: ConfigView[];
+  onSet: (path: string, key: string, value: unknown) => void;
+  onRemove: (path: string, key: string) => void;
+}): JSX.Element {
+  return (
+    <>
+      <h2 className="section-title">Config</h2>
+      <p className="section-sub">
+        Every editable JSON config in this project — Biome, Prettier, ESLint, oxlint, tsconfig.
+        Change a documented option to plan a format- and comment-preserving edit; the tool ships no
+        opinion about which value to pick.
+      </p>
+      {props.configs.map((cfg) => (
+        <ConfigCard key={cfg.path} config={cfg} onSet={props.onSet} onRemove={props.onRemove} />
+      ))}
+      {props.configs.length === 0 && (
+        <div className="empty">No editable JSON configs detected in this project.</div>
+      )}
     </>
   );
 }
