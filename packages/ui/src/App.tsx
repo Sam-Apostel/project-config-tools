@@ -9,7 +9,7 @@ import type {
   ProjectModel,
   ScriptEntry,
 } from '@apostel/visual-config-core';
-import type { BumpAnalysis, TsconfigView } from '@apostel/visual-config-protocol';
+import type { BumpAnalysis, ReleaseNotes, TsconfigView } from '@apostel/visual-config-protocol';
 import { connect, type ServerRpc } from './rpc.js';
 
 type Section =
@@ -23,6 +23,10 @@ interface TaskRun {
 }
 
 type OutdatedMap = Map<string, { latest: string; diff: string; severity: string }>;
+type VulnInfo = { level: string; title: string; url?: string };
+type VulnMap = Map<string, VulnInfo[]>;
+type DeprecationMap = Map<string, { message: string; alternative?: string }>;
+type ChangelogMap = Map<string, ReleaseNotes[] | 'loading'>;
 
 export function App(): JSX.Element {
   const [rpc, setRpc] = useState<ServerRpc | null>(null);
@@ -33,6 +37,9 @@ export function App(): JSX.Element {
   const [pending, setPending] = useState<Change | null>(null);
   const [runs, setRuns] = useState<TaskRun[]>([]);
   const [outdated, setOutdated] = useState<OutdatedMap>(new Map());
+  const [vulns, setVulns] = useState<VulnMap>(new Map());
+  const [deprecations, setDeprecations] = useState<DeprecationMap>(new Map());
+  const [changelogs, setChangelogs] = useState<ChangelogMap>(new Map());
   const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
   const [improvements, setImprovements] = useState<Improvement[]>([]);
   const [bumps, setBumps] = useState<Map<string, BumpAnalysis | 'loading'>>(new Map());
@@ -65,17 +72,36 @@ export function App(): JSX.Element {
         connection
           .getDiagnostics()
           .then((diag) => {
-            const map: OutdatedMap = new Map();
+            const out: OutdatedMap = new Map();
+            const vuln: VulnMap = new Map();
+            const dep: DeprecationMap = new Map();
             for (const d of diag.items) {
               if (d.kind === 'outdated' && d.data) {
-                map.set(d.target, {
+                out.set(d.target, {
                   latest: String(d.data.latest),
                   diff: String(d.data.diff),
                   severity: d.severity,
                 });
+              } else if (d.kind === 'vulnerability') {
+                const list = vuln.get(d.target) ?? [];
+                list.push({
+                  level: String(d.data?.level ?? d.severity),
+                  title: d.message,
+                  url: d.data?.url ? String(d.data.url) : undefined,
+                });
+                vuln.set(d.target, list);
+              } else if (d.kind === 'deprecation') {
+                dep.set(d.target, {
+                  message: d.message,
+                  alternative: d.data?.alternative ? String(d.data.alternative) : undefined,
+                });
               }
             }
-            if (!closed) setOutdated(map);
+            if (!closed) {
+              setOutdated(out);
+              setVulns(vuln);
+              setDeprecations(dep);
+            }
           })
           .catch(() => undefined);
       })
@@ -155,6 +181,30 @@ export function App(): JSX.Element {
       setError('Could not analyze that bump.');
     }
   }, []);
+
+  const loadChangelog = useCallback(
+    async (name: string) => {
+      const connection = rpcRef.current;
+      if (!connection) return;
+      if (changelogs.has(name)) {
+        // Already open (or loading) — a second click collapses it.
+        setChangelogs((prev) => {
+          const next = new Map(prev);
+          next.delete(name);
+          return next;
+        });
+        return;
+      }
+      setChangelogs((prev) => new Map(prev).set(name, 'loading'));
+      try {
+        const notes = await connection.getChangelog(name);
+        setChangelogs((prev) => new Map(prev).set(name, notes));
+      } catch {
+        setChangelogs((prev) => new Map(prev).set(name, []));
+      }
+    },
+    [changelogs],
+  );
 
   const planUpgradeAll = useCallback(async (upgrades: Array<{ name: string; range: string }>) => {
     const connection = rpcRef.current;
@@ -300,8 +350,12 @@ export function App(): JSX.Element {
           <Dependencies
             deps={deps}
             outdated={outdated}
+            vulns={vulns}
+            deprecations={deprecations}
+            changelogs={changelogs}
             bumps={bumps}
             onAnalyze={analyzeBump}
+            onChangelog={loadChangelog}
             onUpgrade={(name, latest, dev) => planInstall(name, `^${latest}`, dev)}
             onRemove={(name) => planRemoveDependency(name)}
             onUpgradeAll={() =>
@@ -508,19 +562,25 @@ function Overview(props: {
 function Dependencies(props: {
   deps: DependencyEntry[];
   outdated: OutdatedMap;
+  vulns: VulnMap;
+  deprecations: DeprecationMap;
+  changelogs: ChangelogMap;
   bumps: Map<string, BumpAnalysis | 'loading'>;
   onAnalyze: (name: string) => void;
+  onChangelog: (name: string) => void;
   onUpgrade: (name: string, latest: string, dev: boolean) => void;
   onRemove: (name: string) => void;
   onUpgradeAll: () => void;
 }): JSX.Element {
   const outdatedCount = props.deps.filter((d) => props.outdated.has(d.name)).length;
+  const vulnCount = props.deps.filter((d) => props.vulns.has(d.name)).length;
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <h2 className="section-title" style={{ flex: 1 }}>
           Dependencies
         </h2>
+        {vulnCount > 0 && <span className="badge risk-breaking">{vulnCount} vulnerable</span>}
         {outdatedCount > 0 && (
           <button className="btn primary small" onClick={props.onUpgradeAll}>
             Upgrade all ({outdatedCount})
@@ -528,19 +588,33 @@ function Dependencies(props: {
         )}
       </div>
       <p className="section-sub">
-        Everything declared in package.json. Outdated versions are facts from the registry; “Safe?”
-        checks the changelog against your code.
+        Everything declared in package.json. Vulnerabilities, deprecations and outdated versions are
+        facts from the registry; “Safe?” checks the changelog against your code, and “Changelog”
+        shows the release notes.
       </p>
       <div className="card">
         {props.deps.map((d) => {
           const out = props.outdated.get(d.name);
           const bump = props.bumps.get(d.name);
+          const vuln = props.vulns.get(d.name);
+          const deprecated = props.deprecations.get(d.name);
+          const changelog = props.changelogs.get(d.name);
           return (
             <div className="row" key={`${d.type}:${d.name}`} style={{ flexWrap: 'wrap' }}>
               <span className="name grow">{d.name}</span>
               <span className="name" style={{ color: 'var(--text-muted)' }}>
                 {d.range}
               </span>
+              {vuln && (
+                <span className="badge risk-breaking" title={vuln.map((v) => v.title).join('\n')}>
+                  {vuln.length} vuln{vuln.length > 1 ? 's' : ''}
+                </span>
+              )}
+              {deprecated && (
+                <span className="badge risk-review" title={deprecated.message}>
+                  deprecated
+                </span>
+              )}
               {out && (
                 <span className={`badge ${out.severity === 'warn' ? 'risk-review' : ''}`}>
                   → {out.latest} ({out.diff})
@@ -560,6 +634,9 @@ function Dependencies(props: {
                   Safe?
                 </button>
               )}
+              <button className="btn small" onClick={() => props.onChangelog(d.name)}>
+                Changelog
+              </button>
               {out && (
                 <button
                   className="btn small"
@@ -568,9 +645,32 @@ function Dependencies(props: {
                   Upgrade
                 </button>
               )}
+              {deprecated?.alternative && (
+                <button
+                  className="btn small"
+                  title={`Install ${deprecated.alternative} instead`}
+                  onClick={() =>
+                    props.onUpgrade(deprecated.alternative!, 'latest', d.type === 'dev')
+                  }
+                >
+                  → {deprecated.alternative}
+                </button>
+              )}
               <button className="btn small" onClick={() => props.onRemove(d.name)}>
                 Remove
               </button>
+              {deprecated && (
+                <div
+                  style={{
+                    flexBasis: '100%',
+                    fontSize: 12,
+                    color: 'var(--warn)',
+                    paddingLeft: 2,
+                  }}
+                >
+                  Deprecated: {deprecated.message}
+                </div>
+              )}
               {bump && bump !== 'loading' && (
                 <div
                   style={{
@@ -589,12 +689,55 @@ function Dependencies(props: {
                     : (bump.notes[0] ?? 'No affecting changes found for your usage.')}
                 </div>
               )}
+              {changelog && (
+                <div style={{ flexBasis: '100%' }}>
+                  {changelog === 'loading' ? (
+                    <div className="empty">Loading changelog…</div>
+                  ) : changelog.length === 0 ? (
+                    <div className="empty">
+                      No release notes found (no GitHub releases, or none in this range).
+                    </div>
+                  ) : (
+                    <ChangelogView notes={changelog} />
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
         {props.deps.length === 0 && <div className="empty">No dependencies yet.</div>}
       </div>
     </>
+  );
+}
+
+function ChangelogView(props: { notes: ReleaseNotes[] }): JSX.Element {
+  const notes = [...props.notes].reverse(); // newest first
+  return (
+    <div className="changelog">
+      {notes.map((n) => (
+        <div className="changelog-entry" key={n.version}>
+          <div className="changelog-head">
+            <span className="name">{n.version}</span>
+            {n.url && (
+              <a href={n.url} target="_blank" rel="noreferrer" className="changelog-link">
+                release notes ↗
+              </a>
+            )}
+            {n.breakingChanges.length > 0 && (
+              <span className="badge risk-breaking">{n.breakingChanges.length} breaking</span>
+            )}
+          </div>
+          {n.breakingChanges.length > 0 && (
+            <ul className="changelog-breaking">
+              {n.breakingChanges.map((b, i) => (
+                <li key={i}>{b.summary}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 

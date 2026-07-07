@@ -109,6 +109,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       getTsconfig: () => engine.getTsconfig(),
       getImprovements: async () => engine.getImprovements(),
       analyzeBump: (pkg, to) => engine.analyzeBump(pkg, to),
+      getChangelog: (name, from, to) => engine.getChangelog(name, from, to),
     };
 
     const rpc = createBirpc<ClientFunctions, ServerFunctions>(serverFunctions, {
