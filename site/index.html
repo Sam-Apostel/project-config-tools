@@ -1,0 +1,1802 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>visual-config — one surface for every config</title>
+    <meta
+      name="description"
+      content="A visual control surface for JavaScript/TypeScript project configuration (dependencies, scripts, TypeScript, publishing) on top of the config files you already have. Every change is a reviewed, reversible diff. For humans and agents."
+    />
+    <meta property="og:title" content="visual-config — one surface for every config" />
+    <meta
+      property="og:description"
+      content="See your whole project's configuration, change any of it through a reviewed diff, undo anything. The same guardrailed operations for you and your AI agents (MCP)."
+    />
+    <meta property="og:type" content="website" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E1116'/%3E%3Cpath d='M9 12h14M9 16h14M9 20h9' stroke='%235B8DEF' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./tokens.css" />
+    <style>
+      /* ——— page scaffold (consumes tokens.css; no raw hex outside tokens) ——— */
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: var(--t-body);
+        font-size: 15px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--brand);
+        text-decoration: none;
+      }
+      a:hover {
+        color: var(--brand-hi);
+        text-decoration: underline;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+        font-size: 0.92em;
+      }
+      ::selection {
+        background: var(--brand-quiet);
+      }
+      :focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+        border-radius: var(--r-sm);
+      }
+
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 var(--sp-6);
+      }
+      section {
+        padding: var(--sp-9) 0;
+        border-top: 1px solid var(--border);
+      }
+      h2 {
+        font: var(--t-h1);
+        font-size: 28px;
+        line-height: 1.25;
+        margin: 0 0 var(--sp-4);
+        letter-spacing: -0.01em;
+        text-wrap: balance;
+      }
+      h3 {
+        font: var(--t-h3);
+        margin: 0 0 var(--sp-3);
+        text-wrap: balance;
+      }
+      .lede {
+        color: var(--text-muted);
+        max-width: 640px;
+        margin: 0 0 var(--sp-7);
+        text-wrap: pretty;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: var(--sp-6);
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--sp-2);
+        font: var(--t-caption);
+        font-family: var(--font-mono);
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        background: var(--bg-subtle);
+        white-space: nowrap;
+      }
+      .badge.ok {
+        color: var(--ok);
+        border-color: var(--ok);
+        background: var(--ok-quiet);
+      }
+      .badge.warn {
+        color: var(--warn);
+        border-color: var(--warn);
+        background: var(--warn-quiet);
+      }
+      .badge.info {
+        color: var(--brand);
+        border-color: var(--brand);
+        background: var(--brand-quiet);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--sp-3);
+        font: var(--t-body);
+        font-weight: 600;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border-hi);
+        border-radius: var(--r-md);
+        padding: var(--sp-3) var(--sp-5);
+        cursor: pointer;
+        transition:
+          background var(--motion-fast) var(--ease-out),
+          border-color var(--motion-fast) var(--ease-out);
+      }
+      .btn:hover {
+        background: var(--surface-hi);
+        text-decoration: none;
+      }
+      .btn.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: var(--bg);
+      }
+      .btn.primary:hover {
+        background: var(--brand-hi);
+        border-color: var(--brand-hi);
+        color: var(--bg);
+      }
+      .btn.small {
+        font-size: 13px;
+        padding: var(--sp-2) var(--sp-4);
+      }
+
+      /* ——— header ——— */
+      header.site {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: color-mix(in srgb, var(--bg) 88%, transparent);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+      }
+      header.site .wrap {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-6);
+        height: 56px;
+      }
+      .wordmark {
+        font-weight: 600;
+        color: var(--text);
+        font-size: 15px;
+        letter-spacing: -0.01em;
+      }
+      .wordmark:hover {
+        text-decoration: none;
+      }
+      .wordmark .tld {
+        color: var(--brand);
+      }
+      nav.top {
+        display: flex;
+        gap: var(--sp-5);
+        margin-left: auto;
+        align-items: center;
+      }
+      nav.top a {
+        color: var(--text-muted);
+        font-size: 13.5px;
+      }
+      nav.top a:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      .theme-toggle {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px 9px;
+        font-size: 13px;
+      }
+      .theme-toggle:hover {
+        color: var(--text);
+        border-color: var(--border-hi);
+      }
+      @media (max-width: 780px) {
+        nav.top a.hide-sm {
+          display: none;
+        }
+      }
+
+      /* ——— hero ——— */
+      .hero {
+        padding: var(--sp-9) 0 var(--sp-8);
+        border-top: none;
+      }
+      .hero h1 {
+        font-family: var(--font-sans);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        font-size: clamp(34px, 5.4vw, 54px);
+        line-height: 1.08;
+        margin: var(--sp-5) 0 var(--sp-5);
+        max-width: 780px;
+        text-wrap: balance;
+      }
+      .hero h1 em {
+        font-style: normal;
+        color: var(--brand);
+      }
+      .hero .sub {
+        color: var(--text-muted);
+        font-size: 17px;
+        max-width: 640px;
+        margin: 0 0 var(--sp-6);
+      }
+      .hero-badges {
+        display: flex;
+        gap: var(--sp-3);
+        flex-wrap: wrap;
+        margin-bottom: var(--sp-6);
+      }
+      .cmd {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--sp-5);
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: var(--sp-4) var(--sp-5);
+        font-family: var(--font-mono);
+        font-size: 15px;
+      }
+      .cmd .dollar {
+        color: var(--text-muted);
+        user-select: none;
+      }
+      .cmd button {
+        background: none;
+        border: 1px solid var(--border-hi);
+        color: var(--text-muted);
+        border-radius: var(--r-sm);
+        font: var(--t-caption);
+        padding: 3px 9px;
+        cursor: pointer;
+      }
+      .cmd button:hover {
+        color: var(--text);
+      }
+      .hero-actions {
+        display: flex;
+        gap: var(--sp-4);
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: var(--sp-6);
+      }
+      .shot-frame {
+        margin-top: var(--sp-8);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-2);
+        background: var(--surface);
+      }
+      .shot-frame .chrome {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-subtle);
+      }
+      .shot-frame .chrome i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border-hi);
+        display: block;
+      }
+      .shot-frame .chrome .url {
+        margin-left: var(--sp-4);
+        font: var(--t-caption);
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+      }
+      .shot-frame img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      /* ——— audiences: one ruled panel, hairline-divided (not floating card clones) ——— */
+      .aud-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        overflow: hidden;
+      }
+      @media (max-width: 720px) {
+        .aud-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .aud {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-3);
+        background: var(--bg);
+        padding: var(--sp-6);
+      }
+      .aud .who {
+        font: var(--t-small);
+        font-weight: 600;
+        color: var(--brand);
+      }
+      .aud h3 {
+        font-size: 17px;
+        margin: 0;
+      }
+      .aud p {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+      .aud ul {
+        margin: var(--sp-2) 0 0;
+        padding-left: 18px;
+        color: var(--text-muted);
+        font-size: 13.5px;
+      }
+      .aud li {
+        margin: 4px 0;
+      }
+      .aud li::marker {
+        color: var(--brand);
+      }
+
+      /* ——— interactive demo ——— */
+      .demo-stage {
+        position: relative;
+        padding: 0;
+      }
+      .demo-ui {
+        padding: var(--sp-6);
+        min-height: 470px;
+      }
+      .demo-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-4);
+        padding: var(--sp-4) var(--sp-5);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        background: var(--bg-subtle);
+      }
+      .demo-row .pkg {
+        font-family: var(--font-mono);
+        font-weight: 600;
+      }
+      .demo-row .ver {
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      .demo-row .grow {
+        flex: 1;
+      }
+      .demo-hint {
+        margin-top: var(--sp-4);
+        font: var(--t-caption);
+        color: var(--text-muted);
+      }
+      .demo-journal {
+        margin-top: var(--sp-5);
+        display: none;
+      }
+      .demo-journal.visible {
+        display: block;
+      }
+      .demo-journal .entry {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-4);
+        padding: var(--sp-3) var(--sp-5);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        font-size: 13.5px;
+        color: var(--text-muted);
+      }
+      .sheet-demo {
+        position: absolute;
+        left: var(--sp-5);
+        right: var(--sp-5);
+        bottom: var(--sp-5);
+        background: var(--surface-hi);
+        border: 1px solid var(--border-hi);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-2);
+        transform: translateY(24px);
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          transform var(--motion-slow) var(--ease-out),
+          opacity var(--motion-slow) var(--ease-out),
+          visibility 0s linear var(--motion-slow);
+      }
+      .sheet-demo.open {
+        transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
+        transition:
+          transform var(--motion-slow) var(--ease-out),
+          opacity var(--motion-slow) var(--ease-out),
+          visibility 0s;
+      }
+      .sheet-demo header {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-4);
+        padding: var(--sp-4) var(--sp-5);
+        border-bottom: 1px solid var(--border);
+        position: static;
+        background: none;
+        backdrop-filter: none;
+      }
+      .sheet-demo header .sum {
+        font-weight: 600;
+        flex: 1;
+        font-size: 14px;
+      }
+      .sheet-demo .diff {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        line-height: 1.7;
+        padding: var(--sp-4) var(--sp-5);
+        margin: 0;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      .sheet-demo .diff .add {
+        color: var(--ok);
+      }
+      .sheet-demo .diff .del {
+        color: var(--danger);
+      }
+      .sheet-demo .diff .meta {
+        color: var(--text-muted);
+      }
+      .sheet-demo footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--sp-3);
+        padding: var(--sp-4) var(--sp-5);
+        border-top: 1px solid var(--border);
+      }
+      .demo-note {
+        margin-top: var(--sp-4);
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+
+      /* ——— works today ——— */
+      .facts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--sp-3) var(--sp-6);
+      }
+      .fact {
+        display: flex;
+        gap: var(--sp-3);
+        align-items: baseline;
+        font-size: 14px;
+        color: var(--text-muted);
+      }
+      .fact .dot {
+        color: var(--ok);
+        font-weight: 600;
+      }
+      .fact b {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* ——— gallery ——— */
+      .tabs {
+        display: flex;
+        gap: var(--sp-2);
+        flex-wrap: wrap;
+        margin-bottom: var(--sp-5);
+      }
+      .tabs button {
+        font: var(--t-small);
+        font-weight: 600;
+        color: var(--text-muted);
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 14px;
+        cursor: pointer;
+        transition: all var(--motion-fast) var(--ease-out);
+      }
+      .tabs button:hover {
+        color: var(--text);
+        border-color: var(--border-hi);
+      }
+      .tabs button.active {
+        color: var(--brand);
+        border-color: var(--brand);
+        background: var(--brand-quiet);
+      }
+      .gallery-caption {
+        margin-top: var(--sp-4);
+        color: var(--text-muted);
+        font-size: 14px;
+        max-width: 720px;
+      }
+
+      /* ——— package map ——— */
+      .map-layout {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: var(--sp-6);
+        align-items: start;
+      }
+      @media (max-width: 880px) {
+        .map-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      .tier {
+        margin-bottom: var(--sp-5);
+      }
+      .tier-label {
+        font: var(--t-caption);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        margin-bottom: var(--sp-3);
+      }
+      .tier-row {
+        display: flex;
+        gap: var(--sp-3);
+        flex-wrap: wrap;
+      }
+      .pkg-card {
+        flex: 1;
+        min-width: 150px;
+        text-align: left;
+        cursor: pointer;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: var(--sp-4) var(--sp-5);
+        color: var(--text);
+        transition:
+          border-color var(--motion-fast) var(--ease-out),
+          background var(--motion-fast) var(--ease-out),
+          opacity var(--motion-fast) var(--ease-out);
+      }
+      .pkg-card .nm {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: 13.5px;
+        display: block;
+      }
+      .pkg-card .rl {
+        font-size: 12px;
+        color: var(--text-muted);
+        display: block;
+        margin-top: 2px;
+      }
+      .pkg-card:hover {
+        border-color: var(--border-hi);
+        background: var(--surface-hi);
+      }
+      .pkg-card.sel {
+        border-color: var(--brand);
+        background: var(--brand-quiet);
+      }
+      .pkg-card.dep {
+        border-color: var(--ok);
+      }
+      .pkg-card.dependent {
+        border-color: var(--warn);
+      }
+      .map.has-sel .pkg-card:not(.sel):not(.dep):not(.dependent) {
+        opacity: 0.45;
+      }
+      .flow-hint {
+        text-align: center;
+        font: var(--t-caption);
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        margin: 2px 0 var(--sp-4);
+      }
+      .pkg-detail {
+        position: sticky;
+        top: 76px;
+      }
+      .pkg-detail .npm {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        word-break: break-all;
+      }
+      .pkg-detail dl {
+        margin: var(--sp-4) 0 0;
+      }
+      .pkg-detail dt {
+        font: var(--t-caption);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-top: var(--sp-4);
+      }
+      .pkg-detail dd {
+        margin: var(--sp-2) 0 0;
+        font-size: 14px;
+        color: var(--text-muted);
+      }
+      .legend {
+        display: flex;
+        gap: var(--sp-5);
+        margin-top: var(--sp-4);
+        font: var(--t-caption);
+        color: var(--text-muted);
+        flex-wrap: wrap;
+      }
+      .legend i {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        border: 1.5px solid;
+        vertical-align: -1px;
+        margin-right: 5px;
+      }
+      .legend .l-sel i {
+        border-color: var(--brand);
+        background: var(--brand-quiet);
+      }
+      .legend .l-dep i {
+        border-color: var(--ok);
+      }
+      .legend .l-dependent i {
+        border-color: var(--warn);
+      }
+
+      /* ——— roadmap ——— */
+      .phases {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        position: relative;
+      }
+      .phase {
+        display: grid;
+        grid-template-columns: 26px 1fr;
+        gap: var(--sp-5);
+        position: relative;
+        padding-bottom: var(--sp-6);
+      }
+      .phase .rail-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        margin-top: 5px;
+        margin-left: 5px;
+        border: 2.5px solid var(--border-hi);
+        background: var(--bg);
+        z-index: 1;
+      }
+      .phase.done .rail-dot {
+        border-color: var(--ok);
+        background: var(--ok);
+      }
+      .phase.doing .rail-dot {
+        border-color: var(--brand);
+        background: var(--brand-quiet);
+      }
+      .phase:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 22px;
+        bottom: -4px;
+        width: 2px;
+        background: var(--border);
+      }
+      .phase h3 {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        flex-wrap: wrap;
+        font-size: 15.5px;
+      }
+      .phase p {
+        margin: var(--sp-2) 0 0;
+        color: var(--text-muted);
+        font-size: 14px;
+        max-width: 720px;
+      }
+
+      /* ——— principles: a ruled two-column list, no boxes ——— */
+      .prin-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        column-gap: var(--sp-8);
+      }
+      .prin {
+        padding: var(--sp-5) 0;
+        border-top: 1px solid var(--border);
+      }
+      .prin h3 {
+        font-size: 15px;
+      }
+      .prin p {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 13.5px;
+        text-wrap: pretty;
+      }
+
+      /* ——— docs: a directory listing, not a card wall ——— */
+      .doc-list {
+        border-top: 1px solid var(--border);
+      }
+      a.doc-row {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: var(--sp-2) var(--sp-6);
+        align-items: baseline;
+        color: var(--text);
+        padding: var(--sp-4) 0;
+        border-bottom: 1px solid var(--border);
+      }
+      a.doc-row:hover {
+        text-decoration: none;
+      }
+      a.doc-row .path {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--brand);
+      }
+      a.doc-row:hover .path {
+        color: var(--brand-hi);
+        text-decoration: underline;
+      }
+      a.doc-row .about {
+        font-size: 14px;
+      }
+      a.doc-row .about b {
+        font-weight: 600;
+      }
+      a.doc-row .about span {
+        color: var(--text-muted);
+      }
+      @media (max-width: 680px) {
+        a.doc-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ——— agents strip ——— */
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--sp-7);
+        align-items: center;
+      }
+      @media (max-width: 880px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+      }
+      pre.code {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: var(--sp-5);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 1.7;
+        overflow-x: auto;
+        margin: 0;
+      }
+      pre.code .c {
+        color: var(--text-muted);
+      }
+      pre.code .k {
+        color: var(--brand);
+      }
+      pre.code .s {
+        color: var(--ok);
+      }
+
+      footer.site {
+        border-top: 1px solid var(--border);
+        padding: var(--sp-7) 0 var(--sp-8);
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      footer.site .wrap {
+        display: flex;
+        gap: var(--sp-5);
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      footer.site nav {
+        margin-left: auto;
+        display: flex;
+        gap: var(--sp-5);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        .sheet-demo {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site">
+      <div class="wrap">
+        <a class="wordmark" href="#top">visual<span class="tld">-config</span></a>
+        <nav class="top" aria-label="Sections">
+          <a href="#why" class="hide-sm">Why</a>
+          <a href="#demo">Demo</a>
+          <a href="#screenshots">Screenshots</a>
+          <a href="#packages">Packages</a>
+          <a href="#roadmap" class="hide-sm">Roadmap</a>
+          <a href="#docs">Docs</a>
+          <a href="https://github.com/Sam-Apostel/project-config-tools">GitHub</a>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle color theme">◐</button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- ——————————————————— hero ——————————————————— -->
+      <section class="hero">
+        <div class="wrap">
+          <div class="hero-badges">
+            <span class="badge info">v0.1.2 on npm</span>
+            <span class="badge warn">early alpha</span>
+            <span class="badge">MIT</span>
+            <span class="badge">TypeScript · ESM · Node ≥20</span>
+          </div>
+          <h1>Your project's config finally gets <em>an interface</em>.</h1>
+          <p class="sub">
+            visual-config is a visual control surface for JavaScript/TypeScript project
+            configuration (dependencies, scripts, TypeScript, publishing) that lives
+            <strong>on top of</strong> the files you already have. Every change is a reviewed diff.
+            Everything is reversible. Your files stay the source of truth.
+          </p>
+          <div class="cmd">
+            <span class="dollar">$</span>
+            <span id="npxCmd">npx @apostel/visual-config</span>
+            <button id="copyCmd" aria-label="Copy command">copy</button>
+          </div>
+          <div class="hero-actions">
+            <a class="btn primary" href="#demo">Try the loop ↓</a>
+            <a class="btn" href="https://github.com/Sam-Apostel/project-config-tools"
+              >Star on GitHub</a
+            >
+          </div>
+          <figure class="shot-frame" style="margin-bottom: 0">
+            <div class="chrome" aria-hidden="true">
+              <i></i><i></i><i></i>
+              <span class="url">127.0.0.1:4517 · acme-storefront</span>
+            </div>
+            <img
+              src="./assets/diff-sheet.png"
+              width="1440"
+              height="900"
+              alt="The visual-config Diff Sheet showing an 'Upgrade 8 dependencies' change as an exact package.json diff with Confirm and Cancel buttons."
+            />
+          </figure>
+        </div>
+      </section>
+
+      <!-- ——————————————————— audiences ——————————————————— -->
+      <section id="why">
+        <div class="wrap">
+          <h2>Four kinds of people keep ending up here.</h2>
+          <p class="lede">
+            Config is the operating system of a project, and everyone touches it differently. Pick
+            your seat.
+          </p>
+          <div class="aud-grid">
+            <div class="aud">
+              <span class="who">You ship apps</span>
+              <h3>Stop hand-editing a dozen JSON files</h3>
+              <p>
+                One command opens your whole project's config as a UI. Any repo, no dev server, no
+                setup.
+              </p>
+              <ul>
+                <li>Outdated deps as facts, with <b>Upgrade all</b> behind one reviewed diff</li>
+                <li>
+                  Install by <em>selecting</em> from a catalog, so an <code>npx</code> typo can't
+                  execute a random package
+                </li>
+                <li>Scripts become buttons with live output</li>
+                <li>Undo anything, from the journal</li>
+              </ul>
+            </div>
+            <div class="aud">
+              <span class="who">You run agents</span>
+              <h3>Guardrails instead of free-typed shell</h3>
+              <p>
+                <code>visual-config mcp</code> hands your agent the same operations you get as
+                buttons: validated, previewable, reversible.
+              </p>
+              <ul>
+                <li>Every mutation returns a structured diff, not a side effect</li>
+                <li>Format- and comment-preserving writes, enforced scope</li>
+                <li>Supervised mode: the agent's diff lands in <em>your</em> Diff Sheet</li>
+                <li>MCP resources expose the project model read-only</li>
+              </ul>
+            </div>
+            <div class="aud">
+              <span class="who">You build tools</span>
+              <h3>Ship your ecosystem's vertical as a plugin</h3>
+              <p>
+                The built-ins are plugins with zero special privileges. Your framework or linter can
+                have a first-class panel.
+              </p>
+              <ul>
+                <li><code>definePlugin</code> from <code>@apostel/visual-config-kit</code></li>
+                <li>Operations you register appear in the UI <em>and</em> as MCP tools, free</li>
+                <li>Plugins can't touch the filesystem; they return Changes</li>
+                <li>Auto-discovered from the project's dependencies</li>
+              </ul>
+            </div>
+            <div class="aud">
+              <span class="who">You have taste</span>
+              <h3>Opinions are packs, not defaults</h3>
+              <p>
+                The base states only verifiable facts. Recommendations come from opinion packs users
+                install, always labeled with your name.
+              </p>
+              <ul>
+                <li>“Enable <code>strict</code>” shows as <em>your</em> advice, attributed</li>
+                <li>Users stack packs, see where they disagree, pick</li>
+                <li>Verified vs community badges</li>
+                <li>Local-first, no account, no telemetry</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ——————————————————— interactive demo ——————————————————— -->
+      <section id="demo">
+        <div class="wrap">
+          <h2>Try the loop: plan → review → apply → undo.</h2>
+          <p class="lede">
+            This is a simulation of the real flow, in the real design system. Nothing here writes
+            without the Diff Sheet, and nothing applied is ever more than one click from undone.
+          </p>
+          <div class="card demo-stage">
+            <div class="demo-ui">
+              <div class="demo-row">
+                <span class="pkg">zod</span>
+                <span class="ver">^3.22.4</span>
+                <span class="badge warn">→ 4.4.3 (major)</span>
+                <span class="grow"></span>
+                <button class="btn small" id="demoUpgrade">Upgrade</button>
+              </div>
+              <div class="demo-journal" id="demoJournal">
+                <div class="tier-label" style="margin-top: 0">History</div>
+                <div class="entry">
+                  <span style="flex: 1">Upgrade <code>zod</code> to <code>^4.4.3</code></span>
+                  <span class="badge">you</span>
+                  <span class="badge ok" id="demoApplied">applied</span>
+                  <button class="btn small" id="demoUndo">Undo</button>
+                </div>
+              </div>
+              <p class="demo-hint" id="demoHint">
+                Press <b>Upgrade</b>. The change is planned, not written.
+              </p>
+            </div>
+            <div
+              class="sheet-demo"
+              id="demoSheet"
+              role="dialog"
+              aria-label="Diff Sheet (demo)"
+              aria-hidden="true"
+            >
+              <header>
+                <span class="sum">Upgrade <code>zod</code> from ^3.22.4 to ^4.4.3</span>
+                <span class="badge warn">review</span>
+              </header>
+              <pre class="diff"><span class="meta">Index: package.json
+==========================================================</span>
+<span class="meta">@@ -14,7 +14,7 @@</span>
+   "dependencies": {
+     "react": "^18.2.0",
+<span class="del">-    "zod": "^3.22.4",</span>
+<span class="add">+    "zod": "^4.4.3",</span>
+     "clsx": "^1.2.1"
+   },</pre>
+              <footer>
+                <button class="btn" id="demoCancel">Cancel</button>
+                <button class="btn primary" id="demoConfirm">Confirm</button>
+              </footer>
+            </div>
+          </div>
+          <p class="demo-note">
+            The real thing does this for installs, removals, script edits, tsconfig options, and
+            package fields. Agent-initiated changes render in the same sheet.
+          </p>
+        </div>
+      </section>
+
+      <!-- ——————————————————— what works today ——————————————————— -->
+      <section id="today">
+        <div class="wrap">
+          <h2>What works today, v0.1.x.</h2>
+          <p class="lede">
+            Early alpha, published to npm. The spine is real and green (typecheck + tests in CI);
+            the vision docs describe the rest.
+          </p>
+          <div class="facts">
+            <div class="fact">
+              <span class="dot">●</span
+              ><span><b>npx-able</b>: boots a local daemon, opens the React UI on any repo</span>
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span><b>Overview</b>: inline-editable name, version, description</span>
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span
+                ><b>Dependencies</b>: outdated facts from the registry, Upgrade / Upgrade&nbsp;all /
+                Remove</span
+              >
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span><b>Catalog</b>: search npm, install by selecting, never by typing</span>
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span><b>TypeScript</b>: view compilerOptions, toggle them as reviewed edits</span>
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span><b>Scripts</b>: run as buttons with streamed output and Stop</span>
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span
+                ><b>Diff Sheet</b>: every mutation previewed, confirmed, journaled, undoable</span
+              >
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span
+                ><b>MCP server</b>: every operation as an agent tool, plus read-only resources</span
+              >
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span
+                ><b>Plugins</b>: built-ins load as a plugin; third parties add operations and
+                detectors</span
+              >
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span><b>Opinion packs</b>: attributed recommendations, zero baked-in taste</span>
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span
+                ><b>Format-preserving writes</b>: minimal diffs, comments survive,
+                golden-tested</span
+              >
+            </div>
+            <div class="fact">
+              <span class="dot">●</span
+              ><span
+                ><b>Enforced scope</b>: operations declare what they may write; the engine rejects
+                the rest</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ——————————————————— screenshots ——————————————————— -->
+      <section id="screenshots">
+        <div class="wrap">
+          <h2>Real screenshots, real registry data.</h2>
+          <p class="lede">
+            Captured from the current build running against a demo project, not mockups.
+          </p>
+          <div class="tabs" id="galleryTabs" role="tablist"></div>
+          <figure class="shot-frame" style="margin-top: 0">
+            <div class="chrome" aria-hidden="true">
+              <i></i><i></i><i></i>
+              <span class="url">127.0.0.1:4517 · acme-storefront</span>
+            </div>
+            <img id="galleryImg" src="./assets/dependencies.png" width="1440" height="900" alt="" />
+          </figure>
+          <p class="gallery-caption" id="galleryCaption"></p>
+        </div>
+      </section>
+
+      <!-- ——————————————————— agents ——————————————————— -->
+      <section id="agents">
+        <div class="wrap">
+          <div class="split">
+            <div>
+              <h2>
+                Your agent shouldn't free-type <code>rm</code>-adjacent shell into your config.
+              </h2>
+              <p class="lede" style="margin-bottom: var(--sp-5)">
+                Every button in the UI is also an MCP tool. Agents plan the same Operations, get
+                back the same structured diff, and write through the same validated, reversible
+                engine. As agents write more of your code, the config layer is exactly where you
+                want them constrained and observable.
+              </p>
+              <a
+                class="btn"
+                href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/spec/05-mcp-and-rpc.md"
+                >Read the MCP spec →</a
+              >
+            </div>
+            <pre class="code"><span class="c"># run the tools as an MCP server (stdio)</span>
+<span class="k">npx</span> @apostel/visual-config mcp
+
+<span class="c"># or register it for Claude / Cursor / VS Code in one step</span>
+<span class="k">npx</span> @apostel/visual-config init-mcp
+
+<span class="c"># every operation becomes a plan_* tool returning a diff:</span>
+plan_install_package      plan_upgrade_dependencies
+plan_remove_dependency    plan_add_script
+plan_remove_script        plan_set_tsconfig_option
+plan_set_package_field    plan_add_mcp_config
+
+<span class="c"># plus the engine itself:</span>
+get_project   get_diagnostics   analyze_bump
+apply_change  undo              list_journal
+
+<span class="c"># read-only resources:</span>
+<span class="s">project://model   diagnostics://outdated   tsconfig://options</span></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ——————————————————— package map ——————————————————— -->
+      <section id="packages">
+        <div class="wrap">
+          <h2>One headless core, many thin faces.</h2>
+          <p class="lede">
+            Eight packages in one pnpm workspace. The core knows nothing about HTTP, the DOM, or
+            MCP; the browser UI, the daemon, and the agent server are thin transports over the same
+            engine. <strong>Click a package</strong> to see its role and wiring.
+          </p>
+          <div class="map-layout">
+            <div class="map" id="pkgMap">
+              <div class="tier">
+                <div class="tier-label">Faces · how you reach it</div>
+                <div class="tier-row" data-tier="faces"></div>
+              </div>
+              <div class="flow-hint">▲ birpc / WebSocket · stdio MCP · bin ▲</div>
+              <div class="tier">
+                <div class="tier-label">Transport</div>
+                <div class="tier-row" data-tier="transport"></div>
+              </div>
+              <div class="flow-hint">▲ Operations in · Changes out ▲</div>
+              <div class="tier">
+                <div class="tier-label">The engine</div>
+                <div class="tier-row" data-tier="core"></div>
+              </div>
+              <div class="flow-hint">▼ plugin API · built-ins have no special privileges ▼</div>
+              <div class="tier" style="margin-bottom: 0">
+                <div class="tier-label">Ecosystem</div>
+                <div class="tier-row" data-tier="ecosystem"></div>
+              </div>
+              <div class="legend">
+                <span class="l-sel"><i></i>selected</span>
+                <span class="l-dep"><i></i>it depends on</span>
+                <span class="l-dependent"><i></i>depends on it</span>
+              </div>
+            </div>
+            <aside class="card pkg-detail" id="pkgDetail" aria-live="polite">
+              <span class="npm" id="pdNpm">Select a package</span>
+              <dl>
+                <dt>Role</dt>
+                <dd id="pdRole">Every box on the left is a real published package. Click one.</dd>
+                <dt>Depends on</dt>
+                <dd id="pdDeps">—</dd>
+                <dt>Links</dt>
+                <dd id="pdLinks">—</dd>
+              </dl>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <!-- ——————————————————— roadmap ——————————————————— -->
+      <section id="roadmap">
+        <div class="wrap">
+          <h2>The roadmap: sequence and scope, not a schedule.</h2>
+          <p class="lede">
+            Each phase is independently useful and builds on the same core. Full detail with exit
+            criteria in
+            <a href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/ROADMAP.md"
+              >docs/ROADMAP.md</a
+            >.
+          </p>
+          <div class="phases">
+            <div class="phase done">
+              <div class="rail-dot"></div>
+              <div>
+                <h3>Milestone 0: the end-to-end spine <span class="badge ok">shipped</span></h3>
+                <p>
+                  Core → daemon → birpc → React UI → Change → journal, proven on the smallest
+                  feature. Runs on any repo.
+                </p>
+              </div>
+            </div>
+            <div class="phase done">
+              <div class="rail-dot"></div>
+              <div>
+                <h3>Phase 0: foundations <span class="badge ok">shipped</span></h3>
+                <p>
+                  The format- and comment-preserving write layer (golden-tested), the
+                  Operation→Change→undo engine with enforced scope, and the plugin host the
+                  built-ins themselves run on.
+                </p>
+              </div>
+            </div>
+            <div class="phase done">
+              <div class="rail-dot"></div>
+              <div>
+                <h3>
+                  Phase 1: the npx browser tool <span class="badge ok">on npm</span>
+                  <span class="badge">vulns pending</span>
+                </h3>
+                <p>
+                  package.json viewer, scripts as buttons, the catalog, the Diff Sheet,
+                  outdated-dependency facts with safe upgrades. Vulnerability data (npm audit / OSV)
+                  is the open item.
+                </p>
+              </div>
+            </div>
+            <div class="phase doing">
+              <div class="rail-dot"></div>
+              <div>
+                <h3>
+                  Phase 2: understand &amp; improve config
+                  <span class="badge info">in progress</span>
+                </h3>
+                <p>
+                  TypeScript panel and the attributed opinions system are in. Next:
+                  changelog-driven, code-aware bump safety; migrations backed by codemods or
+                  maintainer-authored agent skills; guided framework config; publish-readiness
+                  checks.
+                </p>
+              </div>
+            </div>
+            <div class="phase done">
+              <div class="rail-dot"></div>
+              <div>
+                <h3>Phase 3: the MCP server <span class="badge ok">shipped early</span></h3>
+                <p>
+                  Landed ahead of sequence because the Operation abstraction made it nearly free.
+                  The clearest moat: nobody else exposes reversible config <em>mutations</em> to
+                  agents.
+                </p>
+              </div>
+            </div>
+            <div class="phase doing">
+              <div class="rail-dot"></div>
+              <div>
+                <h3>Phase 4: open the plugin API <span class="badge info">started</span></h3>
+                <p>
+                  <code>definePlugin</code>, npm auto-discovery, and a worked opinion pack exist. To
+                  come: stabilized contribution surface, declarative config editors, the
+                  marketplace.
+                </p>
+              </div>
+            </div>
+            <div class="phase">
+              <div class="rail-dot"></div>
+              <div>
+                <h3>Phase 5: the hard, flashy swaps <span class="badge">planned</span></h3>
+                <p>
+                  Biome ⇄ ESLint+Prettier as one previewed, reversible transaction, honest about
+                  lossy rule translation. Only after the diff/undo machinery has earned trust.
+                </p>
+              </div>
+            </div>
+            <div class="phase">
+              <div class="rail-dot"></div>
+              <div>
+                <h3>Phase 6: IDE panels <span class="badge">planned</span></h3>
+                <p>
+                  VS Code webview panel first, JetBrains via JCEF, Zed through MCP. Plus the honest,
+                  IDE-native “cleaner workspace” toggle: decluttering, never hiding state.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ——————————————————— principles ——————————————————— -->
+      <section id="principles">
+        <div class="wrap">
+          <h2>The invariants are the product.</h2>
+          <p class="lede">Six rules the codebase enforces, not aspirations.</p>
+          <div class="prin-list">
+            <div class="prin">
+              <h3>Files are the only source of truth</h3>
+              <p>
+                No shadow store, no lock-in layer. We read and write the exact files git already
+                tracks. Uninstalling leaves your project byte-for-byte as it was.
+              </p>
+            </div>
+            <div class="prin">
+              <h3>No write without a confirmed Change</h3>
+              <p>
+                <code>plan()</code> never writes. One engine method applies changes, and every
+                operation declares the files it may touch; the engine rejects the rest.
+              </p>
+            </div>
+            <div class="prin">
+              <h3>Format-preserving, or an explicit refusal</h3>
+              <p>
+                Minimal diffs a careful human would produce. The moment a tool clobbers your
+                comments or reorders your keys, trust is gone, so that layer is golden-tested.
+              </p>
+            </div>
+            <div class="prin">
+              <h3>Reversible by default</h3>
+              <p>
+                Every applied change lands in a journal with its inverse. Undo is a first-class
+                citizen for human and agent actions alike.
+              </p>
+            </div>
+            <div class="prin">
+              <h3>Facts vs. opinions</h3>
+              <p>
+                The base states only what's verifiable: outdated, vulnerable, non-default. Taste
+                arrives via opinion packs you install, always attributed to their author.
+              </p>
+            </div>
+            <div class="prin">
+              <h3>Local-first, no account, no telemetry</h3>
+              <p>It runs on your machine against your files. That's the whole data flow.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ——————————————————— docs ——————————————————— -->
+      <section id="docs">
+        <div class="wrap">
+          <h2>The thinking is public.</h2>
+          <p class="lede">
+            Vision, feasibility scores, prior art, and the concrete specs the code follows.
+          </p>
+          <div class="doc-list">
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/MANIFESTO.md"
+            >
+              <span class="path">MANIFESTO.md</span>
+              <span class="about"
+                ><b>Why this exists.</b>
+                <span
+                  >Config is a UI problem wearing a text-file costume; the eight beliefs behind the
+                  tool.</span
+                ></span
+              >
+            </a>
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/ANALYSIS.md"
+            >
+              <span class="path">docs/ANALYSIS.md</span>
+              <span class="about"
+                ><b>Feasibility, scored.</b>
+                <span
+                  >Every part of the vision rated for value and risk, including the parts that are
+                  honestly hard.</span
+                ></span
+              >
+            </a>
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/ROADMAP.md"
+            >
+              <span class="path">docs/ROADMAP.md</span>
+              <span class="about"
+                ><b>The roadmap.</b>
+                <span
+                  >Phased plan from npx tool to IDE panels to agent MCP server, with live
+                  implementation status.</span
+                ></span
+              >
+            </a>
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/PRIOR-ART.md"
+            >
+              <span class="path">docs/PRIOR-ART.md</span>
+              <span class="about"
+                ><b>Prior art.</b>
+                <span
+                  >What already exists in this space and the unoccupied quadrant this tool
+                  fills.</span
+                ></span
+              >
+            </a>
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/IDE-INTEGRATION.md"
+            >
+              <span class="path">docs/IDE-INTEGRATION.md</span>
+              <span class="about"
+                ><b>IDE integration.</b>
+                <span
+                  >How deep VS Code, JetBrains, and Zed integration can realistically go.</span
+                ></span
+              >
+            </a>
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/DESIGN-LANGUAGE.md"
+            >
+              <span class="path">docs/DESIGN-LANGUAGE.md</span>
+              <span class="about"
+                ><b>Design language.</b>
+                <span
+                  >The tokens, voice, and interaction rules: the same system this page is built
+                  with.</span
+                ></span
+              >
+            </a>
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/tree/main/docs/spec"
+            >
+              <span class="path">docs/spec/</span>
+              <span class="about"
+                ><b>Nine technical specs.</b>
+                <span
+                  >Architecture, core engine, plugin API, config adapters, migrations, MCP/RPC, IDE
+                  surface, opinions, distribution.</span
+                ></span
+              >
+            </a>
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/packages/opinion-ts-strict"
+            >
+              <span class="path">packages/opinion-ts-strict</span>
+              <span class="about"
+                ><b>A worked opinion pack.</b>
+                <span
+                  >The smallest real example of shipping attributed recommendations as a
+                  plugin.</span
+                ></span
+              >
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ——————————————————— closing ——————————————————— -->
+      <section>
+        <div class="wrap" style="text-align: center">
+          <h2 style="max-width: 640px; margin-left: auto; margin-right: auto">
+            The last time you open <code>tsconfig.json</code> by hand<br />is the day you install
+            it.
+          </h2>
+          <div class="cmd" style="margin-top: var(--sp-5)">
+            <span class="dollar">$</span>
+            <span>npx @apostel/visual-config</span>
+            <button id="copyCmd2" aria-label="Copy command">copy</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <span>visual-config · a descriptive package name, not a brand</span>
+        <nav>
+          <a href="https://github.com/Sam-Apostel/project-config-tools">GitHub</a>
+          <a href="https://www.npmjs.com/org/apostel">npm</a>
+          <a href="https://github.com/Sam-Apostel/project-config-tools/issues">Issues</a>
+          <a href="https://github.com/Sam-Apostel/project-config-tools/blob/main/LICENSE"
+            >License</a
+          >
+        </nav>
+      </div>
+    </footer>
+
+    <script>
+      /* ——— theme ——— */
+      (() => {
+        const root = document.documentElement;
+        const saved = localStorage.getItem('vc-theme');
+        if (saved) root.dataset.theme = saved;
+        document.getElementById('themeToggle').addEventListener('click', () => {
+          const dark =
+            (root.dataset.theme ??
+              (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')) === 'dark';
+          root.dataset.theme = dark ? 'light' : 'dark';
+          localStorage.setItem('vc-theme', root.dataset.theme);
+        });
+      })();
+
+      /* ——— copy buttons ——— */
+      for (const id of ['copyCmd', 'copyCmd2']) {
+        const btn = document.getElementById(id);
+        btn?.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText('npx @apostel/visual-config');
+            btn.textContent = 'copied';
+            setTimeout(() => (btn.textContent = 'copy'), 1600);
+          } catch {
+            /* clipboard unavailable */
+          }
+        });
+      }
+
+      /* ——— diff-sheet demo ——— */
+      (() => {
+        const sheet = document.getElementById('demoSheet');
+        const journal = document.getElementById('demoJournal');
+        const hint = document.getElementById('demoHint');
+        const applied = document.getElementById('demoApplied');
+        const undoBtn = document.getElementById('demoUndo');
+        const open = (v) => {
+          sheet.classList.toggle('open', v);
+          sheet.setAttribute('aria-hidden', String(!v));
+        };
+        document.getElementById('demoUpgrade').addEventListener('click', () => {
+          open(true);
+          hint.textContent = 'The Diff Sheet shows the exact file change. Nothing is written yet.';
+        });
+        document.getElementById('demoCancel').addEventListener('click', () => {
+          open(false);
+          hint.textContent = 'Cancelled. The plan is discarded, the file untouched.';
+        });
+        document.getElementById('demoConfirm').addEventListener('click', () => {
+          open(false);
+          journal.classList.add('visible');
+          applied.textContent = 'applied';
+          applied.className = 'badge ok';
+          undoBtn.style.display = '';
+          hint.innerHTML =
+            'Applied: a minimal, format-preserving edit, journaled with its inverse. Try <b>Undo</b>.';
+        });
+        undoBtn.addEventListener('click', () => {
+          applied.textContent = 'undone';
+          applied.className = 'badge';
+          undoBtn.style.display = 'none';
+          hint.textContent =
+            'Undone. package.json is byte-for-byte back where it started. That is the whole product.';
+        });
+      })();
+
+      /* ——— screenshot gallery ——— */
+      (() => {
+        const shots = [
+          {
+            id: 'dependencies',
+            label: 'Dependencies',
+            cap: 'Everything declared in package.json, with outdated versions as registry facts, each with Upgrade, and one “Upgrade all” that becomes a single reviewed diff.',
+          },
+          {
+            id: 'diff-sheet',
+            label: 'Diff Sheet',
+            cap: 'The signature surface. “Upgrade 8 dependencies” shown as the exact package.json diff it will produce, then Confirm or Cancel. Nothing writes without it.',
+          },
+          {
+            id: 'catalog',
+            label: 'Catalog',
+            cap: 'Live npm registry search. Installing is selecting: there is no free-typed install path, so an npx-style typo can’t execute an arbitrary package.',
+          },
+          {
+            id: 'typescript',
+            label: 'TypeScript',
+            cap: 'compilerOptions as neutral facts. Toggling one plans a comment-preserving edit to tsconfig.json; the base ships no opinion about which value is right.',
+          },
+          {
+            id: 'scripts',
+            label: 'Scripts',
+            cap: 'Every script is a labeled button with streamed output and a Stop control. No recalled incantations.',
+          },
+          {
+            id: 'diff-sheet-tsconfig',
+            label: 'tsconfig edit',
+            cap: 'Toggling noUncheckedIndexedAccess previews a minimal JSONC edit; the file’s comments survive the write.',
+          },
+          {
+            id: 'history',
+            label: 'History',
+            cap: 'The journal. Every applied change is attributed and reversible. Human or agent, same rules.',
+          },
+          {
+            id: 'overview',
+            label: 'Overview',
+            cap: 'A glance at the whole project: metadata (inline-editable), dependency and script counts, and every config file the model detected.',
+          },
+        ];
+        const tabs = document.getElementById('galleryTabs');
+        const img = document.getElementById('galleryImg');
+        const cap = document.getElementById('galleryCaption');
+        shots.forEach((s, i) => {
+          const b = document.createElement('button');
+          b.textContent = s.label;
+          b.role = 'tab';
+          b.addEventListener('click', () => select(i));
+          tabs.appendChild(b);
+        });
+        function select(i) {
+          const s = shots[i];
+          img.src = './assets/' + s.id + '.png';
+          img.alt = s.cap;
+          cap.textContent = s.cap;
+          [...tabs.children].forEach((el, j) => el.classList.toggle('active', i === j));
+        }
+        select(0);
+      })();
+
+      /* ——— package map ——— */
+      (() => {
+        const GH = 'https://github.com/Sam-Apostel/project-config-tools/tree/main/packages/';
+        const NPM = 'https://www.npmjs.com/package/';
+        const pkgs = [
+          {
+            id: 'cli',
+            dir: 'cli',
+            npm: '@apostel/visual-config',
+            tier: 'faces',
+            short: 'the bin',
+            role: 'The `visual-config` command. Boots the daemon and opens the UI; `mcp` runs the agent server on stdio; `init-mcp` registers it for Claude, Cursor, or VS Code.',
+            deps: ['core', 'server', 'ui', 'mcp'],
+          },
+          {
+            id: 'ui',
+            dir: 'ui',
+            npm: '@apostel/visual-config-ui',
+            tier: 'faces',
+            short: 'React SPA',
+            role: 'The browser interface: Overview, Dependencies, Catalog, TypeScript, Scripts, History, and the Diff Sheet. Built to be reused as an IDE webview later.',
+            deps: ['protocol'],
+          },
+          {
+            id: 'mcp',
+            dir: 'mcp',
+            npm: '@apostel/visual-config-mcp',
+            tier: 'faces',
+            short: 'agent tools',
+            role: 'The MCP server. Projects every registered Operation as a plan_* tool returning a structured diff, plus read-only resources like project://model.',
+            deps: ['core'],
+          },
+          {
+            id: 'server',
+            dir: 'server',
+            npm: '@apostel/visual-config-server',
+            tier: 'transport',
+            short: 'local daemon',
+            role: 'The local daemon: serves the built SPA over HTTP, speaks typed birpc over WebSocket, and streams script runs as tasks.',
+            deps: ['core', 'protocol'],
+          },
+          {
+            id: 'protocol',
+            dir: 'protocol',
+            npm: '@apostel/visual-config-protocol',
+            tier: 'transport',
+            short: 'birpc contract',
+            role: 'The shared RPC contract between daemon and UI. Types only: no runtime code, so the UI never imports the engine.',
+            deps: [],
+          },
+          {
+            id: 'core',
+            dir: 'core',
+            npm: '@apostel/visual-config-core',
+            tier: 'core',
+            short: 'the engine',
+            role: 'The headless engine: the ProjectModel read from your real files, Operations that plan() previewable reversible Changes, the undo journal, format-preserving writers, registry diagnostics, and the plugin host. Knows nothing about HTTP, the DOM, or MCP.',
+            deps: [],
+          },
+          {
+            id: 'kit',
+            dir: 'kit',
+            npm: '@apostel/visual-config-kit',
+            tier: 'ecosystem',
+            short: 'plugin authoring',
+            role: 'What plugin and opinion-pack authors import: definePlugin plus the contribution types. Plugins register operations, detectors, and improvements; they return Changes and never touch the filesystem.',
+            deps: [],
+          },
+          {
+            id: 'opinion-ts-strict',
+            dir: 'opinion-ts-strict',
+            npm: '@apostel/visual-config-opinion-ts-strict',
+            tier: 'ecosystem',
+            short: 'worked example',
+            role: 'A real opinion pack: recommends enabling TypeScript strict, attributed to its author, applied through the Diff Sheet. The template for shipping your own taste.',
+            deps: ['kit'],
+          },
+        ];
+        const map = document.getElementById('pkgMap');
+        const byId = Object.fromEntries(pkgs.map((p) => [p.id, p]));
+        for (const p of pkgs) {
+          const btn = document.createElement('button');
+          btn.className = 'pkg-card';
+          btn.dataset.id = p.id;
+          btn.innerHTML =
+            '<span class="nm">' + p.id + '</span><span class="rl">' + p.short + '</span>';
+          btn.addEventListener('click', () => select(p.id));
+          map.querySelector('[data-tier="' + p.tier + '"]').appendChild(btn);
+        }
+        const pdNpm = document.getElementById('pdNpm');
+        const pdRole = document.getElementById('pdRole');
+        const pdDeps = document.getElementById('pdDeps');
+        const pdLinks = document.getElementById('pdLinks');
+        function select(id) {
+          const p = byId[id];
+          map.classList.add('has-sel');
+          const dependents = pkgs.filter((q) => q.deps.includes(id)).map((q) => q.id);
+          for (const el of map.querySelectorAll('.pkg-card')) {
+            const eid = el.dataset.id;
+            el.classList.toggle('sel', eid === id);
+            el.classList.toggle('dep', p.deps.includes(eid));
+            el.classList.toggle('dependent', dependents.includes(eid));
+          }
+          pdNpm.textContent = p.npm;
+          pdRole.textContent = p.role.replace(/`/g, '');
+          pdDeps.innerHTML = p.deps.length
+            ? p.deps.map((d) => '<code>' + d + '</code>').join(' · ') +
+              (dependents.length
+                ? '<br /><span style="color:var(--text-muted)">used by ' +
+                  dependents.map((d) => '<code>' + d + '</code>').join(' · ') +
+                  '</span>'
+                : '')
+            : 'nothing in the workspace; it’s the bottom of the graph' +
+              (dependents.length
+                ? '<br /><span style="color:var(--text-muted)">used by ' +
+                  dependents.map((d) => '<code>' + d + '</code>').join(' · ') +
+                  '</span>'
+                : '');
+          pdLinks.innerHTML =
+            '<a href="' +
+            GH +
+            p.dir +
+            '">source</a> · <a href="' +
+            NPM +
+            encodeURIComponent(p.npm) +
+            '">npm</a>';
+        }
+        select('core');
+      })();
+    </script>
+  </body>
+</html>

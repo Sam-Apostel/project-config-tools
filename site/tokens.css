@@ -1,0 +1,152 @@
+/*
+ * Copy of docs/design/tokens.css for the static homepage (site/ deploys standalone
+ * to GitHub Pages). Source of truth: docs/design/tokens.json — keep in sync.
+ */
+
+:root,
+:root[data-theme='dark'] {
+  /* neutrals */
+  --bg: #0e1116;
+  --bg-subtle: #151a21;
+  --surface: #1b212a;
+  --surface-hi: #232b36;
+  --border: #2a323d;
+  --border-hi: #3a4552;
+  --text: #e6e9ed;
+  --text-muted: #9aa4b2;
+  --text-faint: #6b7482;
+
+  /* brand */
+  --brand: #5b8def;
+  --brand-hi: #7ba4f2;
+  --brand-quiet: #1a2536;
+  --focus-ring: #7ba4f2;
+
+  /* status */
+  --ok: #3fb27f;
+  --ok-quiet: #12241c;
+  --info: #5b8def;
+  --info-quiet: #1a2536;
+  --warn: #e0a44b;
+  --warn-quiet: #2a2113;
+  --danger: #e5715f;
+  --danger-quiet: #2a1714;
+  --critical: #c0455e;
+  --critical-quiet: #2a141b;
+
+  /* shadow (dark) */
+  --shadow-1: 0 4px 12px rgba(0, 0, 0, 0.24);
+  --shadow-2: 0 12px 32px rgba(0, 0, 0, 0.32);
+}
+
+:root[data-theme='light'] {
+  --bg: #fbfbfa;
+  --bg-subtle: #f4f4f2;
+  --surface: #ffffff;
+  --surface-hi: #ffffff;
+  --border: #e4e4e1;
+  --border-hi: #cfcfcb;
+  --text: #1a1d21;
+  --text-muted: #5c636e;
+  --text-faint: #8a909a;
+
+  --brand: #2f6be0;
+  --brand-hi: #1e5ad1;
+  --brand-quiet: #eaf1fe;
+  --focus-ring: #2f6be0;
+
+  --ok: #1e8e5a;
+  --ok-quiet: #e4f5ec;
+  --info: #2f6be0;
+  --info-quiet: #eaf1fe;
+  --warn: #b87413;
+  --warn-quiet: #fbf0dc;
+  --danger: #c0392b;
+  --danger-quiet: #fbe7e3;
+  --critical: #9b1c3a;
+  --critical-quiet: #f8e1e7;
+
+  --shadow-1: 0 4px 12px rgba(20, 20, 20, 0.1);
+  --shadow-2: 0 12px 32px rgba(20, 20, 20, 0.14);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #fbfbfa;
+    --bg-subtle: #f4f4f2;
+    --surface: #ffffff;
+    --surface-hi: #ffffff;
+    --border: #e4e4e1;
+    --border-hi: #cfcfcb;
+    --text: #1a1d21;
+    --text-muted: #5c636e;
+    --text-faint: #8a909a;
+    --brand: #2f6be0;
+    --brand-hi: #1e5ad1;
+    --brand-quiet: #eaf1fe;
+    --focus-ring: #2f6be0;
+    --ok: #1e8e5a;
+    --ok-quiet: #e4f5ec;
+    --info: #2f6be0;
+    --info-quiet: #eaf1fe;
+    --warn: #b87413;
+    --warn-quiet: #fbf0dc;
+    --danger: #c0392b;
+    --danger-quiet: #fbe7e3;
+    --critical: #9b1c3a;
+    --critical-quiet: #f8e1e7;
+    --shadow-1: 0 4px 12px rgba(20, 20, 20, 0.1);
+    --shadow-2: 0 12px 32px rgba(20, 20, 20, 0.14);
+  }
+}
+
+:root {
+  /* typography */
+  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --t-display: 600 28px/34px var(--font-sans);
+  --t-h1: 600 22px/28px var(--font-sans);
+  --t-h2: 600 18px/24px var(--font-sans);
+  --t-h3: 600 15px/20px var(--font-sans);
+  --t-body: 400 14px/20px var(--font-sans);
+  --t-small: 400 13px/18px var(--font-sans);
+  --t-mono: 450 13px/20px var(--font-mono);
+  --t-caption: 500 12px/16px var(--font-sans);
+
+  /* space (4px base) */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 8px;
+  --sp-4: 12px;
+  --sp-5: 16px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 48px;
+  --sp-9: 64px;
+
+  /* radius */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  /* motion */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* layout */
+  --content-max: 960px;
+  --rail-w: 216px;
+  --inspector-w: 420px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
