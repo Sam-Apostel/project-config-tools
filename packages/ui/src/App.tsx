@@ -1034,35 +1034,75 @@ function ConfigOptionRow(props: {
   );
 }
 
+function ConfigCardHeader(props: { config: ConfigView }): JSX.Element {
+  const { path, kind, schema, readOnly } = props.config;
+  return (
+    <h3 style={{ fontSize: 15, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+      {schema?.title ?? kind}
+      <span className="name" style={{ color: 'var(--text-faint)', fontWeight: 400 }}>
+        {path}
+      </span>
+      {readOnly && <span className="badge">read-only</span>}
+      {schema?.docsUrl && (
+        <a
+          href={schema.docsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="changelog-link"
+          style={{ marginLeft: 'auto' }}
+        >
+          docs ↗
+        </a>
+      )}
+    </h3>
+  );
+}
+
+/** JS/TS configs are code — show what we could statically read, no edit controls. */
+function ReadOnlyConfigCard(props: { config: ConfigView }): JSX.Element {
+  const { values, dynamicKeys = [] } = props.config;
+  const keys = Object.keys(values);
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <ConfigCardHeader config={props.config} />
+      <p className="section-sub" style={{ marginTop: 0 }}>
+        A code config — statically read, not editable here. Change it in your editor.
+      </p>
+      <div className="card">
+        {keys.map((k) => (
+          <div className="row" key={k}>
+            <span className="name grow">{k}</span>
+            <span className="name" style={{ color: 'var(--text-muted)' }}>
+              {JSON.stringify(values[k])}
+            </span>
+          </div>
+        ))}
+        {keys.length === 0 && (
+          <div className="empty">Nothing statically readable (the config is computed).</div>
+        )}
+      </div>
+      {dynamicKeys.length > 0 && (
+        <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 6 }}>
+          {dynamicKeys.length} key(s) use code and can’t be read statically:{' '}
+          <span className="name">{dynamicKeys.join(', ')}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ConfigCard(props: {
   config: ConfigView;
   onSet: (path: string, key: string, value: unknown) => void;
   onRemove: (path: string, key: string) => void;
 }): JSX.Element {
+  if (props.config.readOnly) return <ReadOnlyConfigCard config={props.config} />;
   const { path, kind, values, schema } = props.config;
   const documented = new Set(schema?.options.map((o) => o.key) ?? []);
   const otherKeys = Object.keys(values).filter((k) => !documented.has(k));
   return (
     <div style={{ marginBottom: 24 }}>
-      <h3
-        style={{ fontSize: 15, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}
-      >
-        {schema?.title ?? kind}
-        <span className="name" style={{ color: 'var(--text-faint)', fontWeight: 400 }}>
-          {path}
-        </span>
-        {schema?.docsUrl && (
-          <a
-            href={schema.docsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="changelog-link"
-            style={{ marginLeft: 'auto' }}
-          >
-            docs ↗
-          </a>
-        )}
-      </h3>
+      <ConfigCardHeader config={props.config} />
       <div className="card">
         {schema?.options.map((opt) => (
           <ConfigOptionRow
@@ -1116,9 +1156,9 @@ function ConfigSection(props: {
     <>
       <h2 className="section-title">Config</h2>
       <p className="section-sub">
-        Every editable JSON config in this project — Biome, Prettier, ESLint, oxlint, tsconfig.
-        Change a documented option to plan a format- and comment-preserving edit; the tool ships no
-        opinion about which value to pick.
+        Your project’s configs. JSON configs (Biome, Prettier, ESLint, oxlint, tsconfig) are
+        editable — change a documented option to plan a format-preserving edit. JS/TS configs
+        (next.config, vite.config, eslint flat) are shown read-only, statically read from the code.
       </p>
       {props.configs.map((cfg) => (
         <ConfigCard key={cfg.path} config={cfg} onSet={props.onSet} onRemove={props.onRemove} />

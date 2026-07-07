@@ -302,6 +302,19 @@ describe('engine.getConfig', () => {
     expect(view?.schema?.title).toBe('Biome');
     expect((view?.values.formatter as { indentStyle?: string }).indentStyle).toBe('space');
   });
+
+  it('statically reads a JS/TS config as a read-only view', async () => {
+    const { engine } = await makeEngine({
+      'package.json': pkg({}),
+      'next.config.ts':
+        'export default { reactStrictMode: true, webpack(c) { return c } } satisfies NextConfig\n',
+    });
+    const view = await engine.getConfig('next.config.ts');
+    expect(view?.kind).toBe('next');
+    expect(view?.readOnly).toBe(true);
+    expect(view?.values).toEqual({ reactStrictMode: true });
+    expect(view?.dynamicKeys).toEqual(['webpack']);
+  });
 });
 
 describe('set-package-field', () => {

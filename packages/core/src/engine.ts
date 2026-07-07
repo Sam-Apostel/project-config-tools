@@ -18,6 +18,7 @@ import { NpmRegistry, type Registry } from './registry/npm.js';
 import { searchCatalog, type CatalogQuery, type CatalogResult } from './catalog.js';
 import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
 import { configSchema, type ConfigView } from './config/schema.js';
+import { extractJsConfig } from './config/js-extract.js';
 import { scaffoldCatalog, type ScaffoldInfo } from './operations/add-config.js';
 import { scanUsage } from './migration/usage.js';
 import { analyzeBump } from './migration/analyze.js';
@@ -238,12 +239,17 @@ export class Engine {
     return out;
   }
 
-  /** Read views of every editable JSON/JSONC config file present in the project. */
+  /**
+   * Read views of every config we can present: editable JSON/JSONC configs (full
+   * data views) plus JS/TS configs (read-only, statically extracted).
+   */
   async getConfigs(): Promise<ConfigView[]> {
-    const editable = this.project.configFiles.filter(
-      (f) => f.editable === 'full' && (f.format === 'json' || f.format === 'jsonc'),
+    const shown = this.project.configFiles.filter(
+      (f) =>
+        (f.editable === 'full' && (f.format === 'json' || f.format === 'jsonc')) ||
+        (f.editable === 'static-subset' && (f.format === 'js' || f.format === 'ts')),
     );
-    const views = await Promise.all(editable.map((f) => this.getConfig(f.path)));
+    const views = await Promise.all(shown.map((f) => this.getConfig(f.path)));
     return views.filter((v): v is ConfigView => v !== undefined);
   }
 
@@ -253,17 +259,40 @@ export class Engine {
     return scaffoldCatalog().map((s) => ({ ...s, present: paths.has(s.configPath) }));
   }
 
-  /** A read view of one config file (parsed values + documented options). */
+  /** A read view of one config file (parsed/extracted values + documented options). */
   async getConfig(path: string): Promise<ConfigView | undefined> {
     const ref = this.project.configFiles.find((f) => f.path === path);
     if (!ref) return undefined;
+
+    let text = '';
+    try {
+      text = await this.fs.readFile(join(this.root, path));
+    } catch {
+      return { path, kind: ref.kind, format: ref.format, present: false, values: {} };
+    }
+
+    // JS/TS configs are code — statically extract their top-level literals.
+    if (ref.format === 'js' || ref.format === 'ts') {
+      const { values, dynamicKeys } = extractJsConfig(text);
+      return {
+        path,
+        kind: ref.kind,
+        format: ref.format,
+        present: true,
+        values,
+        readOnly: true,
+        dynamicKeys,
+        schema: configSchema(ref.kind),
+      };
+    }
+
+    // JSON/JSONC configs are data.
     let values: Record<string, unknown> = {};
     try {
-      const text = await this.fs.readFile(join(this.root, path));
       const parsed = parseJsonc(text) as Record<string, unknown> | undefined;
       if (parsed && typeof parsed === 'object') values = parsed;
     } catch {
-      /* unreadable / not present — empty view */
+      /* unparseable — empty view */
     }
     return {
       path,
