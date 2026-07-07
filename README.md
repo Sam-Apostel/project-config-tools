@@ -9,13 +9,25 @@ already have.
 </p>
 
 > [!IMPORTANT]
-> **Status: early alpha — runs from source, not yet published to npm.**
-> The core spine works today: `npx`-style browser UI + daemon, the
-> Operation→Change→undo engine, a package catalog, outdated diagnostics, and an
-> MCP server. Not everything described below is built yet — see
+> **Status: early alpha — published to npm.** Try it in any JS/TS project:
+> `npx @apostel/visual-config`. The core spine works today: browser UI + daemon,
+> the Operation→Change→undo engine, a package catalog, outdated diagnostics, and
+> an MCP server. Not everything described below is built yet — see
 > [what works today](#what-works-today) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
 >
 > _`visual-config` is a descriptive package name, not a brand — see [`docs/DESIGN-LANGUAGE.md`](docs/DESIGN-LANGUAGE.md)._
+
+---
+
+## See it
+
+The **[homepage](https://sam-apostel.github.io/project-config-tools/)** has live
+screenshots, an interactive tour of the plan→review→apply→undo loop, a clickable
+map of every package, and the roadmap — all sourced from [`site/`](site/).
+
+<p align="center">
+  <img src="site/assets/diff-sheet.png" alt="The Diff Sheet previewing an 'Upgrade 8 dependencies' change as an exact package.json diff" width="720" />
+</p>
 
 ---
 
