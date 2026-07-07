@@ -8,6 +8,7 @@ import { startDaemon } from '@apostel/visual-config-server';
 
 interface CliArgs {
   command?: string;
+  target?: string;
   cwd?: string;
   host?: string;
   port?: number;
@@ -30,6 +31,7 @@ function parseArgs(argv: string[]): CliArgs {
     else if (arg === '--ui-dir') args.uiDir = argv[++i];
     else if (arg === '--client') args.client = argv[++i];
     else if (!arg.startsWith('-') && !args.command) args.command = arg;
+    else if (!arg.startsWith('-') && !args.target) args.target = arg;
   }
   return args;
 }
@@ -61,6 +63,17 @@ function openBrowser(url: string): void {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
+
+  if (args.command === 'try') {
+    // Prototype of the hosted flow: point at a public GitHub repo, get a patch.
+    if (!args.target) {
+      console.error('Usage: visual-config try <owner/repo>   (e.g. sindresorhus/got)');
+      process.exit(1);
+    }
+    const { tryRemote } = await import('./try-remote.js');
+    await tryRemote(args.target);
+    return;
+  }
 
   if (args.command === 'mcp') {
     // stdio is the MCP protocol channel — do not write to stdout here.
