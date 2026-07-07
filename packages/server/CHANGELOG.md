@@ -1,5 +1,13 @@
 # @apostel/visual-config-server
 
+## 0.5.0
+
+### Patch Changes
+
+- Updated dependencies [[`8596ff6`](https://github.com/Sam-Apostel/project-config-tools/commit/8596ff6ae607d84cd5dbaee6777f7e4c615b5e94)]:
+  - @apostel/visual-config-core@0.5.0
+  - @apostel/visual-config-protocol@0.5.0
+
 ## 0.4.0
 
 ### Patch Changes
