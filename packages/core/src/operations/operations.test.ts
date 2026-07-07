@@ -247,6 +247,50 @@ describe('add-config', () => {
   });
 });
 
+describe('switch-to-biome', () => {
+  it('creates biome.json, deletes eslint/prettier configs, drops deps + scripts', async () => {
+    const { engine, fs } = await makeEngine({
+      'package.json': pkg({
+        name: 'demo',
+        devDependencies: { eslint: '^9', prettier: '^3', '@typescript-eslint/parser': '^8' },
+        dependencies: { zod: '^3' },
+        scripts: { lint: 'eslint .', format: 'prettier --write .', test: 'vitest' },
+      }),
+      '.eslintrc.json': '{ "root": true }\n',
+      '.prettierrc': '{ "semi": false }\n',
+    });
+    const change = await engine.plan('switch-to-biome', {});
+    expect(change.risk).toBe('breaking');
+    const paths = change.edits.map((e) => e.path).sort();
+    expect(paths).toEqual(['.eslintrc.json', '.prettierrc', 'biome.json', 'package.json']);
+    // The config files are deletions.
+    expect(change.edits.find((e) => e.path === '.eslintrc.json')!.after).toBeNull();
+    expect(change.edits.find((e) => e.path === '.prettierrc')!.after).toBeNull();
+    expect(change.commands.map((c) => c.argv)).toEqual([
+      ['npm', 'install', '-D', '@biomejs/biome'],
+      ['npm', 'install'],
+    ]);
+
+    await engine.apply(change.id);
+    expect(await fs.exists('/proj/.eslintrc.json')).toBe(false);
+    expect(await fs.exists('/proj/.prettierrc')).toBe(false);
+    expect(await fs.readFile('/proj/biome.json')).toBe('{}\n');
+    const parsed = JSON.parse(await fs.readFile('/proj/package.json'));
+    expect(parsed.devDependencies.eslint).toBeUndefined();
+    expect(parsed.devDependencies.prettier).toBeUndefined();
+    expect(parsed.devDependencies['@typescript-eslint/parser']).toBeUndefined();
+    expect(parsed.dependencies.zod).toBe('^3'); // unrelated dep kept
+    expect(parsed.scripts.lint).toBe('biome lint .'); // replaced
+    expect(parsed.scripts.format).toBe('biome format --write .');
+    expect(parsed.scripts.test).toBe('vitest'); // unrelated script kept
+  });
+
+  it('refuses when there is no ESLint/Prettier to replace', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    await expect(engine.plan('switch-to-biome', {})).rejects.toThrow(/no ESLint\/Prettier/);
+  });
+});
+
 describe('engine.getConfig', () => {
   it('returns a parsed view with documented schema for a detected config', async () => {
     const { engine } = await makeEngine({

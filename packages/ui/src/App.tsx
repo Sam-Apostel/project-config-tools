@@ -187,6 +187,15 @@ export function App(): JSX.Element {
     else setError(result.error ?? 'Could not plan the setup.');
   }, []);
 
+  const planSwitchToBiome = useCallback(async () => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('switch-to-biome', {});
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the switch.');
+  }, []);
+
   const planInstall = useCallback(async (name: string, range: string, dev: boolean) => {
     const connection = rpcRef.current;
     if (!connection) return;
@@ -440,6 +449,7 @@ export function App(): JSX.Element {
             onSet={planSetConfig}
             onRemove={planRemoveConfig}
             onAdd={planAddConfig}
+            onSwitchToBiome={planSwitchToBiome}
           />
         )}
         {section === 'scripts' && (
@@ -1094,8 +1104,14 @@ function ConfigSection(props: {
   onSet: (path: string, key: string, value: unknown) => void;
   onRemove: (path: string, key: string) => void;
   onAdd: (tool: string) => void;
+  onSwitchToBiome: () => void;
 }): JSX.Element {
   const missing = props.scaffolds.filter((s) => !s.present);
+  const hasEslintOrPrettier = props.configs.some((c) =>
+    ['eslint-legacy', 'eslint-flat', 'prettier'].includes(c.kind),
+  );
+  const biomePresent = props.scaffolds.find((s) => s.tool === 'biome')?.present ?? false;
+  const canSwitchToBiome = hasEslintOrPrettier && !biomePresent;
   return (
     <>
       <h2 className="section-title">Config</h2>
@@ -1109,6 +1125,26 @@ function ConfigSection(props: {
       ))}
       {props.configs.length === 0 && (
         <div className="empty">No editable JSON configs detected yet.</div>
+      )}
+      {canSwitchToBiome && (
+        <div style={{ marginTop: 24 }}>
+          <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>Tooling swap</h3>
+          <div className="card">
+            <div className="row">
+              <div className="grow">
+                <div className="name">Switch to Biome</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                  Replace ESLint + Prettier with Biome — removes their configs, deps and scripts,
+                  and adds Biome’s. Previewed and reversible; your rule/format settings aren’t
+                  translated.
+                </div>
+              </div>
+              <button className="btn small" onClick={props.onSwitchToBiome}>
+                Switch to Biome
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {missing.length > 0 && (
         <div style={{ marginTop: 24 }}>
