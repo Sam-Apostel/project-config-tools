@@ -17,31 +17,40 @@ foundation. Concrete design in [`spec/`](spec/); see especially
 
 ## Implementation status (live)
 
-What's built and green on `main` (55 tests, typecheck + CI):
+What's built and green on `main` (published to npm under `@apostel/*`; ~98 tests,
+typecheck + CI):
 
-- ✅ **Milestone 0** and then some — the whole spine runs from source.
+- ✅ **Milestone 0 through most of Phase 2**, plus pieces of Phase 5 (the flashy swaps).
 - ✅ Monorepo (core, protocol, server, ui, mcp, kit, cli); format-preserving
   write layer with golden tests; Operation→Change→undo engine with enforced scope.
-- ✅ Daemon (birpc/ws, token-gated) + **React UI**: Overview (inline-editable
-  metadata), Dependencies (outdated facts + Upgrade/Upgrade-all + Remove),
-  **Catalog** (registry search + install-by-selecting), **TypeScript** (view +
-  toggle compilerOptions), Scripts (run + add), History (undo), the Diff Sheet.
+- ✅ Daemon (birpc/ws, token-gated) + **React UI**: Overview, Dependencies,
+  **Config**, **TypeScript**, **Catalog**, **Scripts** (run + stop), **History**,
+  the Diff Sheet.
+- ✅ **Dependency health** — outdated **+ vulnerabilities** (npm advisory DB) **+
+  deprecations** (with maintainer-suggested alternatives); a **changelog viewer**
+  (GitHub release notes + breaking changes) and **code-aware bump-safety analysis**
+  (breaking changes cross-referenced against the app's real usage).
+- ✅ **Config adapters** — view/edit **Biome / Prettier / ESLint / oxlint / tsconfig**
+  as guided forms with curated factual docs; **read-only static views** of JS/TS
+  configs (`next.config`, `vite.config`, eslint flat) via `@babel/parser`.
+- ✅ **Setup & swaps** — `add-config` scaffolds a tool (Prettier/Biome/oxlint) in one
+  reviewed step; **`switch-to-biome`** replaces ESLint + Prettier as a single
+  reversible Change (deletes configs, prunes deps, swaps scripts).
 - ✅ Operations: add/remove script, install/remove/upgrade dependency,
-  set-tsconfig-option, set-package-field.
-- ✅ **Diagnostics** (outdated facts via the registry, semver-based).
-- ✅ **MCP server** (`visual-config mcp`) projecting every operation as a tool.
-- ✅ **Plugin system** — built-ins load as a plugin; third parties add
-  operations + detectors (`@apostel/visual-config-kit`); plugins auto-discovered from
-  the project's dependencies (npm-first).
-- ✅ **Opinions** — neutral base (zero opinions); an installed opinion pack
-  contributes attributed recommendations rendered with author + verified/
-  community badge, applied through the Diff Sheet (example:
-  `@apostel/visual-config-opinion-ts-strict`).
-- ✅ **MCP resources** — `project://model`, `diagnostics://outdated`,
-  `tsconfig://options` alongside the tools.
-- 🔜 Not yet: migrations (changelog + codemod/skill + code-aware safety),
-  `next.config` AST editing, publish flow (publint/attw), lockfile-based vulns,
-  IDE extensions, the hosted registry/marketplace. The phases below detail these.
+  set-tsconfig-option, set-package-field, set/remove-config-value, add-config,
+  switch-to-biome, add-mcp-config.
+- ✅ **MCP server** — every operation as a `plan_*` tool, plus `get_project`,
+  `get_diagnostics`, `get_changelog`, `get_config`, `analyze_bump`, `apply_change`,
+  `undo`; read-only resources; and an **in-session app UI** (MCP Apps / SEP-1865).
+  `init-mcp` registers the server in `.mcp.json`/`.cursor`/`.vscode` for discovery.
+- ✅ **Plugin system + opinions** — built-ins load as a plugin; third parties add
+  operations/detectors; attributed opinion packs contribute recommendations
+  (example: `@apostel/visual-config-opinion-ts-strict`).
+- ✅ **Release pipeline** — Changesets + GitHub Actions publishing under `@apostel/*`
+  via **OIDC Trusted Publishing** (no token), with per-package GitHub Releases.
+- 🔜 Not yet: **monorepo/workspaces**, **lockfile-exact** diagnostics, guided
+  framework-config _editing_ (AST rewrite), a headless **`check`** mode, IDE
+  extensions, and the **hosted "point at any repo → diff/PR"** playground.
 
 ---
 
