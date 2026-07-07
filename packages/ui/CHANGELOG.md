@@ -1,5 +1,46 @@
 # @apostel/visual-config-ui
 
+## 0.3.0
+
+### Minor Changes
+
+- [#12](https://github.com/Sam-Apostel/project-config-tools/pull/12) [`a64ca0d`](https://github.com/Sam-Apostel/project-config-tools/commit/a64ca0d449818d170c04325b9989b4b5179fed7f) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - Config adapters: view and edit every JSON config, not just tsconfig.
+
+  The tool now understands the JSON/JSONC config files it already detected — **Biome,
+  Prettier, ESLint (legacy `.eslintrc.json`), oxlint**, plus tsconfig/jsconfig — as
+  editable data:
+
+  - Two generic operations, `set-config-value` and `remove-config-value`, edit any
+    known JSON config via the format- and comment-preserving writer, and can create
+    the file if it doesn't exist. Constrained to a fixed allowlist of known config
+    paths (enforced scope).
+  - `Engine.getConfig(path)` / `getConfigs()` return each config's parsed values plus
+    **curated, factual option docs** (name, type, default, description) for the known
+    tools — no taste, just facts.
+  - New **Config** section in the browser UI: each detected config rendered as a form
+    with inline docs and a link to the tool's reference; changing an option plans a
+    previewed diff. Documented options get typed controls (toggle / select / input);
+    other set keys are shown read-only.
+  - MCP: a `get_config` tool, and the two operations exposed as
+    `plan_set_config_value` / `plan_remove_config_value`.
+
+  Next up (not in this change): static-subset views for JS/TS configs (next.config,
+  vite.config, eslint flat) and one-click tooling swaps.
+
+- [#12](https://github.com/Sam-Apostel/project-config-tools/pull/12) [`5826fb6`](https://github.com/Sam-Apostel/project-config-tools/commit/5826fb6199585abaf84f10e92efc918d0cd2de26) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - Config scaffolding: set up a formatter/linter in one reviewed step.
+
+  A new `add-config` operation installs a tool, creates a minimal (non-opinionated)
+  config it accepts on its defaults, and adds its standard scripts — all as a single
+  previewed Change. Ships for **Prettier, Biome, and oxlint**. The installer resolves
+  and pins the version via the project's package manager (npm/pnpm/yarn/bun), so
+  nothing is hard-coded.
+
+  - `Engine.getScaffolds()` lists scaffoldable tools flagged by whether they're already
+    set up; exposed over RPC as `getScaffolds`.
+  - The browser UI's Config section gains a **“Set up a tool”** panel offering each
+    tool not yet present (shows what it installs and the config it creates).
+  - Agents get `plan_add_config`.
+
 ## 0.2.0
 
 ### Minor Changes
