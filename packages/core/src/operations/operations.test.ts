@@ -163,6 +163,103 @@ describe('add-mcp-config', () => {
   });
 });
 
+describe('set-config-value', () => {
+  it('sets a nested value in biome.json (format-preserving)', async () => {
+    const { engine, fs } = await makeEngine({ 'package.json': pkg({}), 'biome.json': '{}\n' });
+    const change = await engine.plan('set-config-value', {
+      path: 'biome.json',
+      key: 'formatter.indentStyle',
+      value: 'space',
+    });
+    expect(change.risk).toBe('review');
+    await engine.apply(change.id);
+    const parsed = JSON.parse(await fs.readFile('/proj/biome.json'));
+    expect(parsed.formatter.indentStyle).toBe('space');
+  });
+
+  it('creates the config file when it does not exist yet', async () => {
+    const { engine, fs } = await makeEngine({ 'package.json': pkg({}) });
+    const change = await engine.plan('set-config-value', {
+      path: '.prettierrc',
+      key: 'singleQuote',
+      value: true,
+    });
+    expect(change.notes.some((n) => n.message.includes("doesn't exist"))).toBe(true);
+    await engine.apply(change.id);
+    expect(JSON.parse(await fs.readFile('/proj/.prettierrc')).singleQuote).toBe(true);
+  });
+
+  it('rejects a path that is not a known config file', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({}) });
+    await expect(
+      engine.plan('set-config-value', { path: 'secrets.json', key: 'x', value: 1 }),
+    ).rejects.toThrow(/not a known/);
+  });
+});
+
+describe('remove-config-value', () => {
+  it('unsets a key, preserving the rest', async () => {
+    const { engine, fs } = await makeEngine({
+      'package.json': pkg({}),
+      '.prettierrc': pkg({ semi: false, tabWidth: 2 }),
+    });
+    const change = await engine.plan('remove-config-value', { path: '.prettierrc', key: 'semi' });
+    await engine.apply(change.id);
+    const parsed = JSON.parse(await fs.readFile('/proj/.prettierrc'));
+    expect(parsed.semi).toBeUndefined();
+    expect(parsed.tabWidth).toBe(2);
+  });
+
+  it('throws when the key is not set', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({}), '.prettierrc': '{}\n' });
+    await expect(
+      engine.plan('remove-config-value', { path: '.prettierrc', key: 'semi' }),
+    ).rejects.toThrow();
+  });
+});
+
+describe('add-config', () => {
+  it('scaffolds Prettier: config + scripts edits and an install command', async () => {
+    const { engine, fs, runner } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    const change = await engine.plan('add-config', { tool: 'prettier' });
+    // Creates .prettierrc and edits package.json (scripts).
+    expect(change.edits.map((e) => e.path).sort()).toEqual(['.prettierrc', 'package.json']);
+    expect(change.commands[0]!.argv).toEqual(['npm', 'install', '-D', 'prettier']);
+    await engine.apply(change.id);
+    expect(await fs.readFile('/proj/.prettierrc')).toBe('{}\n');
+    const parsed = JSON.parse(await fs.readFile('/proj/package.json'));
+    expect(parsed.scripts.format).toBe('prettier --write .');
+    expect(runner.calls).toEqual([['npm', 'install', '-D', 'prettier']]);
+  });
+
+  it('uses the project package manager for the install command', async () => {
+    const { engine } = await makeEngine({
+      'package.json': pkg({ name: 'demo', packageManager: 'pnpm@10.0.0' }),
+      'pnpm-lock.yaml': '',
+    });
+    const change = await engine.plan('add-config', { tool: 'biome' });
+    expect(change.commands[0]!.argv).toEqual(['pnpm', 'add', '-D', '@biomejs/biome']);
+  });
+
+  it('refuses when the tool is already configured', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({}), 'biome.json': '{}\n' });
+    await expect(engine.plan('add-config', { tool: 'biome' })).rejects.toThrow(/already/);
+  });
+});
+
+describe('engine.getConfig', () => {
+  it('returns a parsed view with documented schema for a detected config', async () => {
+    const { engine } = await makeEngine({
+      'package.json': pkg({}),
+      'biome.json': pkg({ formatter: { indentStyle: 'space' } }),
+    });
+    const view = await engine.getConfig('biome.json');
+    expect(view?.kind).toBe('biome');
+    expect(view?.schema?.title).toBe('Biome');
+    expect((view?.values.formatter as { indentStyle?: string }).indentStyle).toBe('space');
+  });
+});
+
 describe('set-package-field', () => {
   it('sets an allowed metadata field', async () => {
     const { engine, fs } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });

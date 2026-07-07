@@ -4,13 +4,20 @@ import type {
   CatalogQuery,
   CatalogResult,
   Change,
+  ConfigKindSchema,
+  ConfigOptionDoc,
+  ConfigView,
   Diagnostics,
   Improvement,
   JournalEntry,
   OperationInfo,
   ProjectModel,
   ReleaseNotes,
+  ScaffoldInfo,
 } from '@apostel/visual-config-core';
+
+/** A scaffoldable tool plus whether it's already set up in this project. */
+export type ScaffoldStatus = ScaffoldInfo & { present: boolean };
 
 /** Result of planning an operation, wrapped so the UI gets structured errors. */
 export interface PlanResult {
@@ -41,6 +48,9 @@ export interface ServerFunctions {
   getImprovements(): Promise<Improvement[]>;
   analyzeBump(pkg: string, to?: string): Promise<BumpAnalysis>;
   getChangelog(name: string, from?: string, to?: string): Promise<ReleaseNotes[]>;
+  getConfigs(): Promise<ConfigView[]>;
+  getConfig(path: string): Promise<ConfigView | undefined>;
+  getScaffolds(): Promise<ScaffoldStatus[]>;
 }
 
 export interface TsconfigView {
@@ -73,4 +83,8 @@ export type {
   Improvement,
   BumpAnalysis,
   ReleaseNotes,
+  ConfigView,
+  ConfigKindSchema,
+  ConfigOptionDoc,
+  ScaffoldInfo,
 };
