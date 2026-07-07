@@ -112,6 +112,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       getChangelog: (name, from, to) => engine.getChangelog(name, from, to),
       getConfigs: () => engine.getConfigs(),
       getConfig: (path) => engine.getConfig(path),
+      getScaffolds: async () => engine.getScaffolds(),
     };
 
     const rpc = createBirpc<ClientFunctions, ServerFunctions>(serverFunctions, {

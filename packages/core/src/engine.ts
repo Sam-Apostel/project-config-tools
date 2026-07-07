@@ -18,6 +18,7 @@ import { NpmRegistry, type Registry } from './registry/npm.js';
 import { searchCatalog, type CatalogQuery, type CatalogResult } from './catalog.js';
 import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
 import { configSchema, type ConfigView } from './config/schema.js';
+import { scaffoldCatalog, type ScaffoldInfo } from './operations/add-config.js';
 import { scanUsage } from './migration/usage.js';
 import { analyzeBump } from './migration/analyze.js';
 import { GithubChangelogSource } from './migration/changelog.js';
@@ -244,6 +245,12 @@ export class Engine {
     );
     const views = await Promise.all(editable.map((f) => this.getConfig(f.path)));
     return views.filter((v): v is ConfigView => v !== undefined);
+  }
+
+  /** Tools that can be scaffolded, flagged by whether they're already set up. */
+  getScaffolds(): Array<ScaffoldInfo & { present: boolean }> {
+    const paths = new Set(this.project.configFiles.map((f) => f.path));
+    return scaffoldCatalog().map((s) => ({ ...s, present: paths.has(s.configPath) }));
   }
 
   /** A read view of one config file (parsed values + documented options). */

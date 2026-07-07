@@ -218,6 +218,35 @@ describe('remove-config-value', () => {
   });
 });
 
+describe('add-config', () => {
+  it('scaffolds Prettier: config + scripts edits and an install command', async () => {
+    const { engine, fs, runner } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    const change = await engine.plan('add-config', { tool: 'prettier' });
+    // Creates .prettierrc and edits package.json (scripts).
+    expect(change.edits.map((e) => e.path).sort()).toEqual(['.prettierrc', 'package.json']);
+    expect(change.commands[0]!.argv).toEqual(['npm', 'install', '-D', 'prettier']);
+    await engine.apply(change.id);
+    expect(await fs.readFile('/proj/.prettierrc')).toBe('{}\n');
+    const parsed = JSON.parse(await fs.readFile('/proj/package.json'));
+    expect(parsed.scripts.format).toBe('prettier --write .');
+    expect(runner.calls).toEqual([['npm', 'install', '-D', 'prettier']]);
+  });
+
+  it('uses the project package manager for the install command', async () => {
+    const { engine } = await makeEngine({
+      'package.json': pkg({ name: 'demo', packageManager: 'pnpm@10.0.0' }),
+      'pnpm-lock.yaml': '',
+    });
+    const change = await engine.plan('add-config', { tool: 'biome' });
+    expect(change.commands[0]!.argv).toEqual(['pnpm', 'add', '-D', '@biomejs/biome']);
+  });
+
+  it('refuses when the tool is already configured', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({}), 'biome.json': '{}\n' });
+    await expect(engine.plan('add-config', { tool: 'biome' })).rejects.toThrow(/already/);
+  });
+});
+
 describe('engine.getConfig', () => {
   it('returns a parsed view with documented schema for a detected config', async () => {
     const { engine } = await makeEngine({

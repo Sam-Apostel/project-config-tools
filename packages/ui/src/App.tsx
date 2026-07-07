@@ -14,6 +14,7 @@ import type {
   ConfigOptionDoc,
   ConfigView,
   ReleaseNotes,
+  ScaffoldStatus,
   TsconfigView,
 } from '@apostel/visual-config-protocol';
 import { connect, type ServerRpc } from './rpc.js';
@@ -55,6 +56,7 @@ export function App(): JSX.Element {
   const [changelogs, setChangelogs] = useState<ChangelogMap>(new Map());
   const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
   const [configs, setConfigs] = useState<ConfigView[]>([]);
+  const [scaffolds, setScaffolds] = useState<ScaffoldStatus[]>([]);
   const [improvements, setImprovements] = useState<Improvement[]>([]);
   const [bumps, setBumps] = useState<Map<string, BumpAnalysis | 'loading'>>(new Map());
   const rpcRef = useRef<ServerRpc | null>(null);
@@ -82,6 +84,7 @@ export function App(): JSX.Element {
         setJournal(await connection.listJournal());
         setTsconfig(await connection.getTsconfig());
         setConfigs(await connection.getConfigs());
+        setScaffolds(await connection.getScaffolds());
         setImprovements(await connection.getImprovements());
         // Diagnostics hit the network; load them without blocking the UI.
         connection
@@ -132,6 +135,7 @@ export function App(): JSX.Element {
     setJournal(await connection.listJournal());
     setTsconfig(await connection.getTsconfig());
     setConfigs(await connection.getConfigs());
+    setScaffolds(await connection.getScaffolds());
     setImprovements(await connection.getImprovements());
   }, []);
 
@@ -172,6 +176,15 @@ export function App(): JSX.Element {
     const result = await connection.planOperation('remove-config-value', { path, key });
     if (result.ok && result.change) setPending(result.change);
     else setError(result.error ?? 'Could not plan the change.');
+  }, []);
+
+  const planAddConfig = useCallback(async (tool: string) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('add-config', { tool });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the setup.');
   }, []);
 
   const planInstall = useCallback(async (name: string, range: string, dev: boolean) => {
@@ -359,7 +372,7 @@ export function App(): JSX.Element {
             onClick={() => setSection('typescript')}
           />
         )}
-        {configs.length > 0 && (
+        {(configs.length > 0 || scaffolds.some((s) => !s.present)) && (
           <RailButton
             label="Config"
             count={configs.length}
@@ -421,7 +434,13 @@ export function App(): JSX.Element {
           <TypeScriptView tsconfig={tsconfig} onSet={planSetTsconfig} />
         )}
         {section === 'config' && (
-          <ConfigSection configs={configs} onSet={planSetConfig} onRemove={planRemoveConfig} />
+          <ConfigSection
+            configs={configs}
+            scaffolds={scaffolds}
+            onSet={planSetConfig}
+            onRemove={planRemoveConfig}
+            onAdd={planAddConfig}
+          />
         )}
         {section === 'scripts' && (
           <Scripts
@@ -1071,9 +1090,12 @@ function ConfigCard(props: {
 
 function ConfigSection(props: {
   configs: ConfigView[];
+  scaffolds: ScaffoldStatus[];
   onSet: (path: string, key: string, value: unknown) => void;
   onRemove: (path: string, key: string) => void;
+  onAdd: (tool: string) => void;
 }): JSX.Element {
+  const missing = props.scaffolds.filter((s) => !s.present);
   return (
     <>
       <h2 className="section-title">Config</h2>
@@ -1086,7 +1108,31 @@ function ConfigSection(props: {
         <ConfigCard key={cfg.path} config={cfg} onSet={props.onSet} onRemove={props.onRemove} />
       ))}
       {props.configs.length === 0 && (
-        <div className="empty">No editable JSON configs detected in this project.</div>
+        <div className="empty">No editable JSON configs detected yet.</div>
+      )}
+      {missing.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>Set up a tool</h3>
+          <p className="section-sub" style={{ marginTop: 0 }}>
+            Install a formatter/linter, create its config, and add its scripts — one reviewed
+            change.
+          </p>
+          <div className="card">
+            {missing.map((s) => (
+              <div className="row" key={s.tool}>
+                <div className="grow">
+                  <div className="name">{s.title}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                    installs {s.packages.join(', ')} · creates {s.configPath}
+                  </div>
+                </div>
+                <button className="btn small primary" onClick={() => props.onAdd(s.tool)}>
+                  Set up {s.title}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </>
   );
