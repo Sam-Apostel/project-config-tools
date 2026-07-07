@@ -28,10 +28,14 @@ export interface ConfigView {
   kind: string;
   format: 'json' | 'jsonc' | 'js' | 'ts' | 'yaml' | 'toml';
   present: boolean;
-  /** The parsed config object (empty when absent or unparseable). */
+  /** The parsed/extracted config object (empty when absent or unreadable). */
   values: Record<string, unknown>;
   /** Documented options for this kind, when known. */
   schema?: ConfigKindSchema;
+  /** True for code configs (JS/TS) that are viewable but not editable as data. */
+  readOnly?: boolean;
+  /** For code configs: keys present but not statically readable. */
+  dynamicKeys?: string[];
 }
 
 /** A JSON/JSONC config file we know how to view and edit as data. */

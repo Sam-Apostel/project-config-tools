@@ -73,6 +73,7 @@ export {
   type ConfigOptionDoc,
   type KnownJsonConfig,
 } from './config/schema.js';
+export { extractJsConfig, type JsConfigExtract } from './config/js-extract.js';
 export { Journal, type JournalEntry, type Actor } from './journal.js';
 export { NodeFileSystem, InMemoryFileSystem } from './fs.js';
 export {
