@@ -1,5 +1,33 @@
 # @apostel/visual-config
 
+## 0.6.0
+
+### Minor Changes
+
+- [#19](https://github.com/Sam-Apostel/project-config-tools/pull/19) [`57d82f5`](https://github.com/Sam-Apostel/project-config-tools/commit/57d82f57f1d09a0efea81e42d3630af77f6afcc3) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - New `visual-config try <owner/repo>` command — the prototype behind the hosted
+  "point at any repo → diff" flow.
+
+  It shallow-clones a public GitHub repo (read-only, never executing its code), runs
+  the real engine against it, prints what it finds (outdated / vulnerable / deprecated
+  dependencies), and emits a **format-preserving patch** that upgrades the outdated
+  deps — to stdout, so you can pipe it to `git apply`. Nothing is written and no
+  package-manager command is run; it's diff-only.
+
+  ```
+  npx @apostel/visual-config try sindresorhus/got
+  ```
+
+  This is the engine reused verbatim over a cloned repo — the same core that powers
+  the local UI and MCP server, pointed at a URL.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @apostel/visual-config-core@0.6.0
+  - @apostel/visual-config-mcp@0.6.0
+  - @apostel/visual-config-server@0.6.0
+  - @apostel/visual-config-ui@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes
