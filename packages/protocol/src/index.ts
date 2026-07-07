@@ -9,6 +9,7 @@ import type {
   JournalEntry,
   OperationInfo,
   ProjectModel,
+  ReleaseNotes,
 } from '@apostel/visual-config-core';
 
 /** Result of planning an operation, wrapped so the UI gets structured errors. */
@@ -39,6 +40,7 @@ export interface ServerFunctions {
   getTsconfig(): Promise<TsconfigView>;
   getImprovements(): Promise<Improvement[]>;
   analyzeBump(pkg: string, to?: string): Promise<BumpAnalysis>;
+  getChangelog(name: string, from?: string, to?: string): Promise<ReleaseNotes[]>;
 }
 
 export interface TsconfigView {
@@ -70,4 +72,5 @@ export type {
   Diagnostics,
   Improvement,
   BumpAnalysis,
+  ReleaseNotes,
 };

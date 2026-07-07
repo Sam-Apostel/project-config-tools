@@ -9,10 +9,31 @@ export interface RegistrySearchHit {
   keywords?: string[];
 }
 
+/** A security advisory affecting one or more versions of a package. */
+export interface Advisory {
+  id?: number;
+  title: string;
+  severity: 'info' | 'low' | 'moderate' | 'high' | 'critical';
+  url?: string;
+  /** semver range of affected versions, e.g. "<4.17.21". */
+  vulnerable_versions?: string;
+}
+
 /** The registry surface the engine depends on (injectable for tests/offline). */
 export interface Registry {
   search(query: string, size?: number): Promise<RegistrySearchHit[]>;
   latestVersion(name: string): Promise<string | undefined>;
+  /**
+   * The deprecation message on the package's latest version, if any (npm sets a
+   * `deprecated` string when a maintainer deprecates a package/version). Optional
+   * so offline/stub registries need not implement it.
+   */
+  deprecation?(name: string): Promise<string | undefined>;
+  /**
+   * Security advisories for the given `{ name: [versions] }`, keyed by package.
+   * Only advisories affecting the supplied versions are returned. Optional.
+   */
+  advisories?(query: Record<string, string[]>): Promise<Record<string, Advisory[]>>;
 }
 
 interface RawSearchResponse {
@@ -59,10 +80,33 @@ export class NpmRegistry implements Registry {
   }
 
   async latestVersion(name: string): Promise<string | undefined> {
+    return (await this.latestManifest(name))?.version;
+  }
+
+  async deprecation(name: string): Promise<string | undefined> {
+    const deprecated = (await this.latestManifest(name))?.deprecated;
+    // npm stores a boolean `true` on some legacy deprecations; normalize to text.
+    if (deprecated === true) return 'This package is deprecated.';
+    return typeof deprecated === 'string' && deprecated.trim() ? deprecated : undefined;
+  }
+
+  async advisories(query: Record<string, string[]>): Promise<Record<string, Advisory[]>> {
+    if (Object.keys(query).length === 0) return {};
+    const res = await this.fetchImpl(`${this.baseUrl}/-/npm/v1/security/advisories/bulk`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(query),
+    });
+    if (!res.ok) throw new Error(`Advisory lookup failed: ${res.status}`);
+    return (await res.json()) as Record<string, Advisory[]>;
+  }
+
+  private async latestManifest(
+    name: string,
+  ): Promise<{ version?: string; deprecated?: string | boolean } | undefined> {
     const res = await this.fetchImpl(`${this.baseUrl}/${name}/latest`);
     if (res.status === 404) return undefined;
     if (!res.ok) throw new Error(`Registry lookup failed for ${name}: ${res.status}`);
-    const data = (await res.json()) as { version?: string };
-    return data.version;
+    return (await res.json()) as { version?: string; deprecated?: string | boolean };
   }
 }

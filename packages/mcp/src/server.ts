@@ -107,6 +107,20 @@ export function createMcpServer(engine: Engine): Server {
         },
       },
     },
+    {
+      name: 'get_changelog',
+      description:
+        'Release notes for a dependency between two versions (default: the installed range floor → latest), with breaking changes extracted. Read-only.',
+      inputSchema: {
+        type: 'object',
+        required: ['package'],
+        properties: {
+          package: { type: 'string', description: 'Dependency name.' },
+          from: { type: 'string', description: 'Start version (exclusive). Default: range floor.' },
+          to: { type: 'string', description: 'End version (inclusive). Default: latest.' },
+        },
+      },
+    },
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -201,6 +215,16 @@ export function createMcpServer(engine: Engine): Server {
       case 'analyze_bump':
         return JSON.stringify(
           await engine.analyzeBump(String(args.package), args.to ? String(args.to) : undefined),
+          null,
+          2,
+        );
+      case 'get_changelog':
+        return JSON.stringify(
+          await engine.getChangelog(
+            String(args.package),
+            args.from ? String(args.from) : undefined,
+            args.to ? String(args.to) : undefined,
+          ),
           null,
           2,
         );

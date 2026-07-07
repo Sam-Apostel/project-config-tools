@@ -20,7 +20,7 @@ import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
 import { scanUsage } from './migration/usage.js';
 import { analyzeBump } from './migration/analyze.js';
 import { GithubChangelogSource } from './migration/changelog.js';
-import type { BumpAnalysis, ChangelogSource } from './migration/types.js';
+import type { BumpAnalysis, ChangelogSource, ReleaseNotes } from './migration/types.js';
 import semver from 'semver';
 import {
   PLUGIN_API_VERSION,
@@ -157,9 +157,30 @@ export class Engine {
     return searchCatalog(this.npm, query);
   }
 
-  /** Compute fact-based diagnostics (outdated deps, …). */
+  /** Compute fact-based diagnostics (outdated, deprecated, vulnerable deps). */
   getDiagnostics(): Promise<Diagnostics> {
     return computeDiagnostics(this.project, this.npm);
+  }
+
+  /**
+   * Release notes for `name` between two versions (default: the range floor →
+   * latest), so a human or agent can read what actually changed before upgrading.
+   * Best-effort: returns [] when the changelog can't be resolved (offline, no
+   * GitHub releases, unresolved repo).
+   */
+  async getChangelog(name: string, from?: string, to?: string): Promise<ReleaseNotes[]> {
+    const dep = this.project.dependencies.find((d) => d.name === name);
+    const base = from ?? (dep ? semver.minVersion(dep.range)?.version : undefined);
+    let target = to;
+    if (!target) {
+      try {
+        target = (await this.npm.latestVersion(name)) ?? undefined;
+      } catch {
+        /* offline */
+      }
+    }
+    if (!base || !target) return [];
+    return this.changelog.fetch(name, base, target);
   }
 
   /**

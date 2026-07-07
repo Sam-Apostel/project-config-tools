@@ -57,7 +57,12 @@ export { setJsonProperty, removeJsonProperty } from './json/edit.js';
 export { detectFormatting } from './json/format.js';
 export { makeUnifiedDiff } from './diff.js';
 export { enforceScope, matchesAnyGlob } from './scope.js';
-export { NpmRegistry, type Registry, type RegistrySearchHit } from './registry/npm.js';
+export {
+  NpmRegistry,
+  type Registry,
+  type RegistrySearchHit,
+  type Advisory,
+} from './registry/npm.js';
 export {
   searchCatalog,
   type CatalogQuery,
@@ -67,6 +72,9 @@ export {
 export {
   computeDiagnostics,
   computeOutdated,
+  computeDeprecations,
+  computeVulnerabilities,
+  extractAlternative,
   type Diagnostics,
   type Diagnostic,
   type DiagnosticKind,
