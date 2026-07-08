@@ -36,7 +36,8 @@
     "@babel/parser": "^8.0.0",
     "diff": "^7.0.0",
     "jsonc-parser": "^3.3.1",
-    "semver": "^7.6.3"
+    "semver": "^7.6.3",
+    "yaml": "^2.6.1"
   },
   "devDependencies": {
     "@types/diff": "^7.0.0",

@@ -42,18 +42,29 @@ export async function computeOutdated(
       try {
         const latest = await registry.latestVersion(dep.name);
         if (!latest) return null;
-        const current = semver.minVersion(dep.range);
+        // Prefer the exact installed version; fall back to the range floor.
+        const current =
+          dep.resolved && semver.valid(dep.resolved)
+            ? dep.resolved
+            : semver.minVersion(dep.range)?.version;
         if (!current) return null;
-        if (semver.gte(current.version, latest)) return null;
-        const diff = semver.diff(current.version, latest) ?? 'update';
+        if (semver.gte(current, latest)) return null;
+        const diff = semver.diff(current, latest) ?? 'update';
         return {
           id: `outdated:${dep.name}`,
           kind: 'outdated',
           source: { type: 'fact', provider: 'registry' },
           severity: diff === 'major' ? 'warn' : 'info',
           target: dep.name,
-          message: `${current.version} → ${latest} (${diff})`,
-          data: { current: current.version, latest, diff, range: dep.range, depType: dep.type },
+          message: `${current} → ${latest} (${diff})`,
+          data: {
+            current,
+            latest,
+            diff,
+            range: dep.range,
+            depType: dep.type,
+            exact: Boolean(dep.resolved),
+          },
         };
       } catch {
         return null;
@@ -64,7 +75,9 @@ export async function computeOutdated(
 }
 
 /** Direct prod/dev deps whose range we can resolve against the registry. */
-function registryDeps(project: ProjectModel): Array<{ name: string; range: string; type: string }> {
+function registryDeps(
+  project: ProjectModel,
+): Array<{ name: string; range: string; type: string; resolved?: string }> {
   return project.dependencies.filter(
     (d) => (d.type === 'prod' || d.type === 'dev') && !NON_REGISTRY.test(d.range),
   );
@@ -149,7 +162,11 @@ export async function computeVulnerabilities(
   const query: Record<string, string[]> = {};
   const ranges = new Map<string, string>();
   for (const dep of deps) {
-    const current = semver.minVersion(dep.range)?.version;
+    // Check the version actually installed when we know it, else the range floor.
+    const current =
+      dep.resolved && semver.valid(dep.resolved)
+        ? dep.resolved
+        : semver.minVersion(dep.range)?.version;
     if (!current) continue;
     query[dep.name] = [current];
     ranges.set(dep.name, dep.range);

@@ -40,7 +40,9 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
 - 🟢 A local daemon + **React UI**: **Overview** (inline-editable name/version/description),
   **Dependencies**, **Config**, **TypeScript**, **Catalog**, **Scripts**, **History**
 - 🟢 **Dependency health** — facts from the registry: **outdated**, **vulnerabilities**
-  (npm advisory DB), and **deprecations** (with the maintainer's suggested alternative)
+  (npm advisory DB), and **deprecations** (with the maintainer's suggested alternative),
+  computed **lockfile-exact** (the installed version, not the range floor), plus each
+  package's **install-size** footprint
 - 🟢 **Changelog viewer** — read GitHub release notes between your version and latest, with
   breaking changes highlighted; plus **bump-safety analysis** that cross-references those
   breaking changes against how _your_ code actually uses the package
@@ -63,9 +65,8 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
 Everything writes through a **format- and comment-preserving** layer; files stay the only
 source of truth. Published under `@apostel/*` via an automated OIDC pipeline.
 
-🟡 **Not yet:** lockfile-exact diagnostics, cross-workspace version alignment, guided
-framework-config _editing_, a headless `check` mode, and IDE panels — see the
-[roadmap](docs/ROADMAP.md).
+🟡 **Not yet:** cross-workspace version alignment, guided framework-config _editing_,
+a headless `check` mode, and IDE panels — see the [roadmap](docs/ROADMAP.md).
 
 ---
 

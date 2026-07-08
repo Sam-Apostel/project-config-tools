@@ -170,6 +170,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       getConfigs: () => engine.getConfigs(),
       getConfig: (path) => engine.getConfig(path),
       getScaffolds: async () => engine.getScaffolds(),
+      getInstallSizes: () => engine.getInstallSizes(),
       getWorkspace: async () => workspaceInfo(),
       setActivePackage: (dir) => setActivePackage(dir),
     };
