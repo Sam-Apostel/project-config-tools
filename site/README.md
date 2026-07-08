@@ -23,14 +23,18 @@ on em-dashes.
 
 ## Structure (post-feedback rework)
 
-The page leads with what the tool is and shows features with real screenshots
-before asking for anything (no premature "star us", no unexplained npx). Section
-order: hero (what it is, one command, annotated screenshot) → features (shown,
-not listed; includes agents/MCP; "coming next" merged in — no separate roadmap
-section) → interactive diff demo → get started (the three commands) →
-ecosystem tiles → package map → invariants → design docs (labeled as
-contributor material, since the repo has no separate usage docs yet) → closing
-CTA with the GitHub star ask at the end, once the visitor knows the project.
+The page is written from the reader's chair, not the builder's: pain before
+pitch, relief before architecture. Section order: hero (sharpest pain line in
+the subhead, one command, annotated screenshot) → the problem (the manifesto's
+aches, plus the solo-adoption line: your teammate opens ordinary files and
+never knows) → features (shown with real screenshots; agents/MCP included;
+"coming next" merged in) → interactive demo (a lodash CVE fixed by a reviewed
+patch bump, then undone) → get started → ecosystem tiles → "What we guarantee"
+→ a three-row docs section (manifesto, architecture, everything else) →
+closing CTA with the GitHub star ask at the end. Deliberately absent: the
+package map / monorepo diagram (architecture flexing; it lives in
+docs/spec/00-architecture.md), defensive proof-of-realness copy, and internal
+phase/milestone language.
 
 **TODO:** a hosted, clickable demo instance was reportedly prepared by another
 agent, but no deployment exists on Railway/Vercel and the repo has no deploy

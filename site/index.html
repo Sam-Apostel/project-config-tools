@@ -121,6 +121,11 @@
         border-color: var(--brand);
         background: var(--brand-quiet);
       }
+      .badge.danger {
+        color: var(--danger);
+        border-color: var(--danger);
+        background: var(--danger-quiet);
+      }
 
       .btn {
         display: inline-flex;
@@ -226,6 +231,16 @@
         color: var(--text);
         border-color: var(--border-hi);
       }
+      .theme-toggle svg {
+        display: block;
+        width: 15px;
+        height: 15px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
 
       /* hero */
       .hero {
@@ -282,18 +297,20 @@
         user-select: none;
       }
       .cmd .line {
+        flex: 1;
         overflow-x: auto;
         white-space: nowrap;
       }
       .cmd button {
-        margin-left: auto;
+        margin-left: var(--sp-4);
         flex: none;
-        background: none;
+        background: var(--surface);
         border: 1px solid var(--border-hi);
         color: var(--text-muted);
         border-radius: var(--r-sm);
         font: var(--t-caption);
-        padding: 3px 9px;
+        font-family: var(--font-sans);
+        padding: 4px 10px;
         cursor: pointer;
       }
       .cmd button:hover {
@@ -360,6 +377,41 @@
         .hero-shot .chrome {
           display: none;
         }
+      }
+
+      /* the problem */
+      .pain-list {
+        border-top: 1px solid var(--border);
+        max-width: 860px;
+      }
+      .pain {
+        display: grid;
+        grid-template-columns: 230px 1fr;
+        gap: var(--sp-2) var(--sp-6);
+        align-items: baseline;
+        padding: var(--sp-4) 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .pain .path {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--text);
+      }
+      .pain .about {
+        color: var(--text-muted);
+        font-size: 14px;
+        text-wrap: pretty;
+      }
+      @media (max-width: 680px) {
+        .pain {
+          grid-template-columns: 1fr;
+        }
+      }
+      .pain-pivot {
+        margin: var(--sp-6) 0 0;
+        max-width: 640px;
+        color: var(--text-muted);
+        text-wrap: pretty;
       }
 
       /* features */
@@ -473,7 +525,7 @@
       }
       .demo-ui {
         padding: var(--sp-6);
-        min-height: 470px;
+        min-height: 430px;
       }
       .demo-row {
         display: flex;
@@ -687,125 +739,6 @@
         color: var(--ok);
       }
 
-      /* package map */
-      .map-layout {
-        display: grid;
-        grid-template-columns: 1.6fr 1fr;
-        gap: var(--sp-6);
-        align-items: start;
-      }
-      @media (max-width: 880px) {
-        .map-layout {
-          grid-template-columns: 1fr;
-        }
-      }
-      .tier {
-        margin-bottom: var(--sp-5);
-      }
-      .tier-label {
-        font: var(--t-caption);
-        color: var(--text-muted);
-        margin-bottom: var(--sp-3);
-      }
-      .tier-row {
-        display: flex;
-        gap: var(--sp-3);
-        flex-wrap: wrap;
-      }
-      .pkg-card {
-        flex: 1;
-        min-width: 150px;
-        text-align: left;
-        cursor: pointer;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-md);
-        padding: var(--sp-4) var(--sp-5);
-        color: var(--text);
-        transition:
-          border-color var(--motion-fast) var(--ease-out),
-          background var(--motion-fast) var(--ease-out),
-          opacity var(--motion-fast) var(--ease-out);
-      }
-      .pkg-card .nm {
-        font-family: var(--font-mono);
-        font-weight: 600;
-        font-size: 13.5px;
-        display: block;
-      }
-      .pkg-card .rl {
-        font-size: 12px;
-        color: var(--text-muted);
-        display: block;
-        margin-top: 2px;
-      }
-      .pkg-card:hover {
-        border-color: var(--border-hi);
-        background: var(--surface-hi);
-      }
-      .pkg-card.sel {
-        border-color: var(--brand);
-        background: var(--brand-quiet);
-      }
-      .pkg-card.dep {
-        border-color: var(--ok);
-      }
-      .pkg-card.dependent {
-        border-color: var(--warn);
-      }
-      .map.has-sel .pkg-card:not(.sel):not(.dep):not(.dependent) {
-        opacity: 0.45;
-      }
-      .pkg-detail {
-        position: sticky;
-        top: 76px;
-      }
-      .pkg-detail .npm {
-        font-family: var(--font-mono);
-        font-size: 13px;
-        word-break: break-all;
-      }
-      .pkg-detail dl {
-        margin: var(--sp-4) 0 0;
-      }
-      .pkg-detail dt {
-        font: var(--t-caption);
-        color: var(--text-muted);
-        margin-top: var(--sp-4);
-      }
-      .pkg-detail dd {
-        margin: var(--sp-2) 0 0;
-        font-size: 14px;
-        color: var(--text-muted);
-      }
-      .legend {
-        display: flex;
-        gap: var(--sp-5);
-        margin-top: var(--sp-4);
-        font: var(--t-caption);
-        color: var(--text-muted);
-        flex-wrap: wrap;
-      }
-      .legend i {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 3px;
-        border: 1.5px solid;
-        vertical-align: -1px;
-        margin-right: 5px;
-      }
-      .legend .l-sel i {
-        border-color: var(--brand);
-        background: var(--brand-quiet);
-      }
-      .legend .l-dep i {
-        border-color: var(--ok);
-      }
-      .legend .l-dependent i {
-        border-color: var(--warn);
-      }
-
       /* principles */
       .prin-list {
         display: grid;
@@ -931,7 +864,7 @@
               />
             </svg>
           </a>
-          <button class="theme-toggle" id="themeToggle" aria-label="Toggle color theme">◐</button>
+          <button class="theme-toggle" id="themeToggle" aria-label="Switch color theme"></button>
         </nav>
       </div>
     </header>
@@ -947,10 +880,9 @@
           </div>
           <h1>Stop hand&#8209;editing <em>config</em>.</h1>
           <p class="sub">
-            visual-config turns your JavaScript or TypeScript project's configuration into one clear
-            interface: dependencies, scripts, tsconfig, linters, formatters. Every change becomes a
-            diff you approve before it touches a file, and anything applied can be undone. Your AI
-            agents get the same safe controls over MCP.
+            You usually find out a config is wrong when the build breaks. visual-config puts an
+            interface on those files instead: see everything, change anything as a diff you approve,
+            undo any of it. Your AI agents get the same guardrails.
           </p>
           <p class="cmd-label">
             It's one command in any JS/TS project. Nothing to install or configure:
@@ -986,13 +918,53 @@
         </div>
       </section>
 
+      <!-- the problem -->
+      <section id="why">
+        <div class="wrap">
+          <h2>None of it is hard engineering. It's hard bookkeeping.</h2>
+          <div class="pain-list">
+            <div class="pain">
+              <span class="path">package.json</span>
+              <span class="about"
+                >Dependencies, scripts, workspaces, and publish settings in one flat blob, where a
+                comment is a syntax error.</span
+              >
+            </div>
+            <div class="pain">
+              <span class="path">tsconfig.json</span>
+              <span class="about"
+                >Around a hundred compiler options, half of them interacting, and the right values
+                drift every TypeScript release.</span
+              >
+            </div>
+            <div class="pain">
+              <span class="path">eslint · prettier · biome</span>
+              <span class="about"
+                >Overlapping tools with conflicting formats, and the first sign a config is wrong is
+                a broken build.</span
+              >
+            </div>
+            <div class="pain">
+              <span class="path">npx whatevr</span>
+              <span class="about"
+                >One typo in an install command, and an arbitrary package just ran code on your
+                machine.</span
+              >
+            </div>
+          </div>
+          <p class="pain-pivot">
+            Config rewards memorizing schemas and flags over engineering. It deserves an interface.
+            And you can adopt one alone: run one command, and your teammate opens the same repo
+            tomorrow to perfectly ordinary files. No team vote required.
+          </p>
+        </div>
+      </section>
+
       <!-- features -->
       <section id="features">
         <div class="wrap">
           <h2>What you can do with it today.</h2>
-          <p class="lede">
-            Version 0.7 is a young alpha, but all of this works right now, on your real project.
-          </p>
+          <p class="lede">Everything here ships in v0.7.</p>
 
           <div class="feat">
             <div>
@@ -1144,7 +1116,7 @@ apply_change  undo              list_journal</pre>
               <li>A plugin marketplace with verified authors</li>
             </ul>
             <p class="shot-cap">
-              The full plan, with what's deliberately last and why, is in the
+              More detail in the
               <a
                 href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/ROADMAP.md"
                 >roadmap</a
@@ -1157,31 +1129,34 @@ apply_change  undo              list_journal</pre>
       <!-- interactive demo -->
       <section id="demo">
         <div class="wrap">
-          <h2>Every change is a reviewed diff. Try one.</h2>
+          <h2>Every fix is a reviewed diff. Try one.</h2>
           <p class="lede">
-            Click <b>Upgrade</b> below. Nothing is written until you confirm the exact edit, and
-            anything you apply can be undone.
+            This lodash carries five known vulnerabilities, and the fix is one patch bump away.
+            Click <b>Fix</b>: nothing is written until you approve the exact edit.
           </p>
           <div class="card demo-stage">
             <div class="demo-ui">
               <div class="demo-row">
-                <span class="pkg">zod</span>
-                <span class="ver">^3.22.4</span>
-                <span class="badge warn">→ 4.4.3 (major)</span>
+                <span class="pkg">lodash</span>
+                <span class="ver">^4.17.20</span>
+                <span class="badge danger">5 vulnerabilities</span>
+                <span class="badge warn">→ 4.17.21 (patch)</span>
                 <span class="grow"></span>
-                <button class="btn small" id="demoUpgrade">Upgrade</button>
+                <button class="btn small" id="demoUpgrade">Fix</button>
               </div>
               <div class="demo-journal" id="demoJournal">
                 <div class="label">History</div>
                 <div class="entry">
-                  <span style="flex: 1">Upgrade <code>zod</code> to <code>^4.4.3</code></span>
+                  <span style="flex: 1"
+                    >Fix <code>lodash</code> vulnerabilities (<code>^4.17.21</code>)</span
+                  >
                   <span class="badge">you</span>
                   <span class="badge ok" id="demoApplied">applied</span>
                   <button class="btn small" id="demoUndo">Undo</button>
                 </div>
               </div>
               <p class="demo-hint" id="demoHint">
-                The change is planned first, never written directly.
+                The fix is planned first, never written directly.
               </p>
             </div>
             <div
@@ -1192,17 +1167,17 @@ apply_change  undo              list_journal</pre>
               aria-hidden="true"
             >
               <header>
-                <span class="sum">Upgrade <code>zod</code> from ^3.22.4 to ^4.4.3</span>
-                <span class="badge warn">review</span>
+                <span class="sum">Fix <code>lodash</code>: ^4.17.20 → ^4.17.21</span>
+                <span class="badge ok">patch</span>
               </header>
               <pre class="diff"><span class="meta">Index: package.json
 ==========================================================</span>
-<span class="meta">@@ -14,7 +14,7 @@</span>
+<span class="meta">@@ -16,7 +16,7 @@</span>
    "dependencies": {
-     "react": "^18.2.0",
-<span class="del">-    "zod": "^3.22.4",</span>
-<span class="add">+    "zod": "^4.4.3",</span>
-     "clsx": "^1.2.1"
+     "date-fns": "^2.30.0",
+<span class="del">-    "lodash": "^4.17.20",</span>
+<span class="add">+    "lodash": "^4.17.21",</span>
+     "zod": "^3.22.4"
    },</pre>
               <footer>
                 <button class="btn" id="demoCancel">Cancel</button>
@@ -1308,16 +1283,19 @@ apply_change  undo              list_journal</pre>
                 <path d="M4 17v2" />
                 <path d="M5 18H3" />
               </svg>
-              <h3>People with opinions worth installing</h3>
+              <h3>Publish your advice as an opinion pack</h3>
               <p>
-                The base tool states only verifiable facts. Recommendations come from opinion packs
-                users choose, always labeled with the author's name.
+                The base tool states only verifiable facts. Recommendations arrive through opinion
+                packs, each labeled with its author's name.
               </p>
               <ul>
                 <li>
                   "Enable <code>strict</code>" appears as <em>your</em> advice, attributed to you
                 </li>
-                <li>Users stack packs and see where they disagree</li>
+                <li>
+                  Packs install side by side; where they disagree, both opinions show, each
+                  attributed
+                </li>
                 <li>Verified and community badges keep provenance visible</li>
               </ul>
             </div>
@@ -1325,59 +1303,11 @@ apply_change  undo              list_journal</pre>
         </div>
       </section>
 
-      <!-- architecture -->
-      <section id="how">
-        <div class="wrap">
-          <h2>One engine. Three ways to use it.</h2>
-          <p class="lede">
-            The browser UI, the agent server, and the CLI are thin layers over a single engine that
-            reads and writes your files. That's why a human click and an agent tool-call produce the
-            exact same reviewed diff. Click a package to explore.
-          </p>
-          <div class="map-layout">
-            <div class="map" id="pkgMap">
-              <div class="tier">
-                <div class="tier-label">Ways to use it</div>
-                <div class="tier-row" data-tier="faces"></div>
-              </div>
-              <div class="tier">
-                <div class="tier-label">Wiring</div>
-                <div class="tier-row" data-tier="transport"></div>
-              </div>
-              <div class="tier">
-                <div class="tier-label">The engine</div>
-                <div class="tier-row" data-tier="core"></div>
-              </div>
-              <div class="tier" style="margin-bottom: 0">
-                <div class="tier-label">Extensions</div>
-                <div class="tier-row" data-tier="ecosystem"></div>
-              </div>
-              <div class="legend">
-                <span class="l-sel"><i></i>selected</span>
-                <span class="l-dep"><i></i>it depends on</span>
-                <span class="l-dependent"><i></i>depends on it</span>
-              </div>
-            </div>
-            <aside class="card pkg-detail" id="pkgDetail" aria-live="polite">
-              <span class="npm" id="pdNpm">Select a package</span>
-              <dl>
-                <dt>Role</dt>
-                <dd id="pdRole">Every box on the left is a real published package. Click one.</dd>
-                <dt>Depends on</dt>
-                <dd id="pdDeps">—</dd>
-                <dt>Links</dt>
-                <dd id="pdLinks">—</dd>
-              </dl>
-            </aside>
-          </div>
-        </div>
-      </section>
-
       <!-- principles -->
       <section id="principles">
         <div class="wrap">
-          <h2>The rules it can't break.</h2>
-          <p class="lede">These are enforced by the code, not aspirations.</p>
+          <h2>What we guarantee.</h2>
+          <p class="lede">Six promises to you, enforced by the engine.</p>
           <div class="prin-list">
             <div class="prin">
               <h3>Your files stay the only source of truth</h3>
@@ -1426,11 +1356,7 @@ apply_change  undo              list_journal</pre>
       <!-- docs -->
       <section id="docs">
         <div class="wrap">
-          <h2>For contributors and the curious.</h2>
-          <p class="lede">
-            You don't need any of this to use the tool. But the design thinking is public, and it's
-            where to start if you want to build a plugin or contribute.
-          </p>
+          <h2>Curious how it's built?</h2>
           <div class="doc-list">
             <a
               class="doc-row"
@@ -1439,83 +1365,32 @@ apply_change  undo              list_journal</pre>
               <span class="path">MANIFESTO.md</span>
               <span class="about"
                 ><b>Why this exists.</b>
+                <span>Config is a UI problem wearing a text-file costume.</span></span
+              >
+            </a>
+            <a
+              class="doc-row"
+              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/spec/00-architecture.md"
+            >
+              <span class="path">docs/spec/00-architecture.md</span>
+              <span class="about"
+                ><b>How it's built.</b>
                 <span
-                  >Config is a UI problem wearing a text-file costume; the eight beliefs behind the
-                  tool.</span
+                  >One engine reads and writes your files; the browser UI, the agent server, and the
+                  CLI are thin layers on top.</span
                 ></span
               >
             </a>
             <a
               class="doc-row"
-              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/ROADMAP.md"
+              href="https://github.com/Sam-Apostel/project-config-tools/tree/main/docs"
             >
-              <span class="path">docs/ROADMAP.md</span>
+              <span class="path">docs/</span>
               <span class="about"
-                ><b>The roadmap.</b>
+                ><b>Everything else.</b>
                 <span
-                  >What ships next and what's deliberately last, with live implementation
-                  status.</span
-                ></span
-              >
-            </a>
-            <a
-              class="doc-row"
-              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/ANALYSIS.md"
-            >
-              <span class="path">docs/ANALYSIS.md</span>
-              <span class="about"
-                ><b>Feasibility, scored.</b>
-                <span
-                  >Every part of the vision rated for value and risk, including the honestly hard
-                  parts.</span
-                ></span
-              >
-            </a>
-            <a
-              class="doc-row"
-              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/PRIOR-ART.md"
-            >
-              <span class="path">docs/PRIOR-ART.md</span>
-              <span class="about"
-                ><b>Prior art.</b>
-                <span>What already exists in this space and the gap this tool fills.</span></span
-              >
-            </a>
-            <a
-              class="doc-row"
-              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/docs/DESIGN-LANGUAGE.md"
-            >
-              <span class="path">docs/DESIGN-LANGUAGE.md</span>
-              <span class="about"
-                ><b>Design language.</b>
-                <span
-                  >The tokens, voice, and interaction rules; the same system this page uses.</span
-                ></span
-              >
-            </a>
-            <a
-              class="doc-row"
-              href="https://github.com/Sam-Apostel/project-config-tools/tree/main/docs/spec"
-            >
-              <span class="path">docs/spec/</span>
-              <span class="about"
-                ><b>Nine technical specs.</b>
-                <span
-                  >Architecture, core engine, plugin API, config adapters, migrations, MCP, IDE
-                  surface, opinions, distribution.</span
-                ></span
-              >
-            </a>
-            <a
-              class="doc-row"
-              href="https://github.com/Sam-Apostel/project-config-tools/blob/main/packages/opinion-ts-strict"
-            >
-              <span class="path">packages/opinion-ts-strict</span>
-              <span class="about"
-                ><b>A worked opinion pack.</b>
-                <span
-                  >The smallest real example of shipping attributed recommendations as a
-                  plugin.</span
+                  >Roadmap, feasibility analysis, prior art, design language, and the full technical
+                  specs.</span
                 ></span
               >
             </a>
@@ -1568,15 +1443,29 @@ apply_change  undo              list_journal</pre>
       /* theme */
       (() => {
         const root = document.documentElement;
+        const btn = document.getElementById('themeToggle');
+        const sun =
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+        const moon =
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+        const current = () =>
+          root.dataset.theme ??
+          (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        const paint = () => {
+          const dark = current() === 'dark';
+          btn.innerHTML = dark ? sun : moon;
+          btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+          btn.title = dark ? 'Switch to light theme' : 'Switch to dark theme';
+        };
         const saved = localStorage.getItem('vc-theme');
         if (saved) root.dataset.theme = saved;
-        document.getElementById('themeToggle').addEventListener('click', () => {
-          const dark =
-            (root.dataset.theme ??
-              (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')) === 'dark';
-          root.dataset.theme = dark ? 'light' : 'dark';
+        btn.addEventListener('click', () => {
+          root.dataset.theme = current() === 'dark' ? 'light' : 'dark';
           localStorage.setItem('vc-theme', root.dataset.theme);
+          paint();
         });
+        matchMedia('(prefers-color-scheme: light)').addEventListener('change', paint);
+        paint();
       })();
 
       /* copy buttons */
@@ -1612,7 +1501,8 @@ apply_change  undo              list_journal</pre>
         };
         document.getElementById('demoUpgrade').addEventListener('click', () => {
           open(true);
-          hint.textContent = 'The exact file change, before it happens. Confirm it or walk away.';
+          hint.textContent =
+            'The exact file change, before it happens. A patch bump; nothing else moves.';
         });
         document.getElementById('demoCancel').addEventListener('click', () => {
           open(false);
@@ -1624,13 +1514,15 @@ apply_change  undo              list_journal</pre>
           applied.textContent = 'applied';
           applied.className = 'badge ok';
           undoBtn.style.display = '';
-          hint.innerHTML = 'Applied as a minimal, format-preserving edit. Now press <b>Undo</b>.';
+          hint.innerHTML =
+            'Applied. Five CVEs gone in one format-preserving edit. Now press <b>Undo</b>, because you can.';
         });
         undoBtn.addEventListener('click', () => {
           applied.textContent = 'undone';
           applied.className = 'badge';
           undoBtn.style.display = 'none';
-          hint.textContent = 'Undone. package.json is byte-for-byte back where it started.';
+          hint.textContent =
+            'Undone. package.json is byte-for-byte back where it started. Every change works like this.';
         });
       })();
 
@@ -1686,132 +1578,6 @@ apply_change  undo              list_journal</pre>
           [...tabs.children].forEach((el, j) => el.classList.toggle('active', i === j));
         }
         select(0);
-      })();
-
-      /* package map */
-      (() => {
-        const GH = 'https://github.com/Sam-Apostel/project-config-tools/tree/main/packages/';
-        const NPM = 'https://www.npmjs.com/package/';
-        const pkgs = [
-          {
-            id: 'cli',
-            dir: 'cli',
-            npm: '@apostel/visual-config',
-            tier: 'faces',
-            short: 'the command',
-            role: 'The `visual-config` command. Boots the daemon and opens the UI; `mcp` runs the agent server; `init-mcp` registers it for Claude, Cursor, or VS Code; `try` inspects any public repo read-only.',
-            deps: ['core', 'server', 'ui', 'mcp'],
-          },
-          {
-            id: 'ui',
-            dir: 'ui',
-            npm: '@apostel/visual-config-ui',
-            tier: 'faces',
-            short: 'browser UI',
-            role: 'The interface in your browser: Overview, Dependencies, Catalog, TypeScript, Config, Scripts, History, and the Diff Sheet. Built to be reused as an IDE webview later.',
-            deps: ['protocol'],
-          },
-          {
-            id: 'mcp',
-            dir: 'mcp',
-            npm: '@apostel/visual-config-mcp',
-            tier: 'faces',
-            short: 'agent server',
-            role: 'The MCP server. Every operation becomes a plan_* tool returning a structured diff, plus read-only resources and an in-session app UI (MCP Apps).',
-            deps: ['core'],
-          },
-          {
-            id: 'server',
-            dir: 'server',
-            npm: '@apostel/visual-config-server',
-            tier: 'transport',
-            short: 'local daemon',
-            role: 'The local daemon: serves the built UI over HTTP, speaks typed RPC over WebSocket, and streams script runs.',
-            deps: ['core', 'protocol'],
-          },
-          {
-            id: 'protocol',
-            dir: 'protocol',
-            npm: '@apostel/visual-config-protocol',
-            tier: 'transport',
-            short: 'shared types',
-            role: 'The contract between daemon and UI. Types only, no runtime code, so the UI never imports the engine.',
-            deps: [],
-          },
-          {
-            id: 'core',
-            dir: 'core',
-            npm: '@apostel/visual-config-core',
-            tier: 'core',
-            short: 'the engine',
-            role: 'The headless engine: reads your project into a model, plans every change as a previewable reversible diff, applies and journals confirmed changes, keeps formatting and comments intact, and hosts the plugin system. Knows nothing about HTTP, the DOM, or MCP.',
-            deps: [],
-          },
-          {
-            id: 'kit',
-            dir: 'kit',
-            npm: '@apostel/visual-config-kit',
-            tier: 'ecosystem',
-            short: 'plugin authoring',
-            role: 'What plugin and opinion-pack authors import: definePlugin plus the contribution types. Plugins register operations and detectors; they return Changes and never touch the filesystem.',
-            deps: [],
-          },
-          {
-            id: 'opinion-ts-strict',
-            dir: 'opinion-ts-strict',
-            npm: '@apostel/visual-config-opinion-ts-strict',
-            tier: 'ecosystem',
-            short: 'worked example',
-            role: 'A real opinion pack: recommends enabling TypeScript strict, attributed to its author, applied through the Diff Sheet. The template for shipping your own.',
-            deps: ['kit'],
-          },
-        ];
-        const map = document.getElementById('pkgMap');
-        const byId = Object.fromEntries(pkgs.map((p) => [p.id, p]));
-        for (const p of pkgs) {
-          const btn = document.createElement('button');
-          btn.className = 'pkg-card';
-          btn.dataset.id = p.id;
-          btn.innerHTML =
-            '<span class="nm">' + p.id + '</span><span class="rl">' + p.short + '</span>';
-          btn.addEventListener('click', () => select(p.id));
-          map.querySelector('[data-tier="' + p.tier + '"]').appendChild(btn);
-        }
-        const pdNpm = document.getElementById('pdNpm');
-        const pdRole = document.getElementById('pdRole');
-        const pdDeps = document.getElementById('pdDeps');
-        const pdLinks = document.getElementById('pdLinks');
-        function select(id) {
-          const p = byId[id];
-          map.classList.add('has-sel');
-          const dependents = pkgs.filter((q) => q.deps.includes(id)).map((q) => q.id);
-          for (const el of map.querySelectorAll('.pkg-card')) {
-            const eid = el.dataset.id;
-            el.classList.toggle('sel', eid === id);
-            el.classList.toggle('dep', p.deps.includes(eid));
-            el.classList.toggle('dependent', dependents.includes(eid));
-          }
-          pdNpm.textContent = p.npm;
-          pdRole.textContent = p.role.replace(/`/g, '');
-          const usedBy = dependents.length
-            ? '<br /><span style="color:var(--text-muted)">used by ' +
-              dependents.map((d) => '<code>' + d + '</code>').join(' · ') +
-              '</span>'
-            : '';
-          pdDeps.innerHTML =
-            (p.deps.length
-              ? p.deps.map((d) => '<code>' + d + '</code>').join(' · ')
-              : 'nothing in the workspace; it’s the bottom of the graph') + usedBy;
-          pdLinks.innerHTML =
-            '<a href="' +
-            GH +
-            p.dir +
-            '">source</a> · <a href="' +
-            NPM +
-            encodeURIComponent(p.npm) +
-            '">npm</a>';
-        }
-        select('core');
       })();
     </script>
   </body>
