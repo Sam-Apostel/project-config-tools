@@ -14,6 +14,7 @@ import type {
   OperationInfo,
   ProjectModel,
   ReleaseNotes,
+  Remediation,
   ScaffoldInfo,
   WorkspacePackage,
 } from '@apostel/visual-config-core';
@@ -65,6 +66,8 @@ export interface ServerFunctions {
   getScaffolds(): Promise<ScaffoldStatus[]>;
   /** Per-dependency install-size footprint (unpacked size of each package's own files). */
   getInstallSizes(): Promise<InstallSizes>;
+  /** Safe upgrade targets for vulnerable dependencies (apply via fix-vulnerabilities). */
+  getRemediation(): Promise<Remediation>;
   /** The workspace members and which one is active (empty members for a single-package project). */
   getWorkspace(): Promise<WorkspaceInfo>;
   /** Switch the active workspace member; pass '' to return to the root. Returns the new active project. */
@@ -100,6 +103,7 @@ export type {
   Diagnostics,
   Improvement,
   InstallSizes,
+  Remediation,
   BumpAnalysis,
   ReleaseNotes,
   ConfigView,

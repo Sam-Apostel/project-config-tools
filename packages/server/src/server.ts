@@ -171,6 +171,7 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       getConfig: (path) => engine.getConfig(path),
       getScaffolds: async () => engine.getScaffolds(),
       getInstallSizes: () => engine.getInstallSizes(),
+      getRemediation: () => engine.getRemediation(),
       getWorkspace: async () => workspaceInfo(),
       setActivePackage: (dir) => setActivePackage(dir),
     };
