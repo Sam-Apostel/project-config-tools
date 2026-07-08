@@ -1,6 +1,6 @@
 {
   "name": "@apostel/visual-config",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "type": "module",
   "description": "A visual interface for your project's config files.",
   "license": "MIT",
