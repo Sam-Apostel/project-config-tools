@@ -357,3 +357,47 @@ describe('set-tsconfig-option', () => {
     ).rejects.toThrow(/No tsconfig/);
   });
 });
+
+describe('fix-vulnerabilities', () => {
+  it('bumps vulnerable deps to safe versions and installs', async () => {
+    const { engine, fs, runner } = await makeEngine({
+      'package.json': pkg({
+        name: 'demo',
+        dependencies: { lodash: '^4.17.15' },
+        devDependencies: { vitest: '^2.1.0' },
+      }),
+    });
+    const change = await engine.plan('fix-vulnerabilities', {
+      fixes: [
+        { name: 'lodash', to: '4.17.21' },
+        { name: 'vitest', to: '2.1.9' },
+      ],
+    });
+    expect(change.summary).toMatch(/Fix 2 vulnerable/);
+    await engine.apply(change.id);
+    const written = JSON.parse(await fs.readFile('/proj/package.json'));
+    expect(written.dependencies.lodash).toBe('^4.17.21');
+    expect(written.devDependencies.vitest).toBe('^2.1.9');
+    expect(runner.calls).toEqual([['npm', 'install']]);
+  });
+
+  it('notes packages that are not in package.json', async () => {
+    const { engine } = await makeEngine({
+      'package.json': pkg({ name: 'demo', dependencies: { lodash: '^4.17.15' } }),
+    });
+    const change = await engine.plan('fix-vulnerabilities', {
+      fixes: [
+        { name: 'lodash', to: '4.17.21' },
+        { name: 'ghost', to: '1.0.0' },
+      ],
+    });
+    expect(change.notes.some((n) => n.message.includes('ghost'))).toBe(true);
+  });
+
+  it('throws when no fix applies', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    await expect(
+      engine.plan('fix-vulnerabilities', { fixes: [{ name: 'x', to: '1.0.0' }] }),
+    ).rejects.toThrow(/none of the packages/);
+  });
+});

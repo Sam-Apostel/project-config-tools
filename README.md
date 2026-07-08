@@ -42,7 +42,8 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
 - 🟢 **Dependency health** — facts from the registry: **outdated**, **vulnerabilities**
   (npm advisory DB), and **deprecations** (with the maintainer's suggested alternative),
   computed **lockfile-exact** (the installed version, not the range floor), plus each
-  package's **install-size** footprint
+  package's **install-size** footprint and one-click **Fix vulnerabilities** (bumps each
+  vulnerable dep to the minimal safe version, flagging major jumps)
 - 🟢 **Changelog viewer** — read GitHub release notes between your version and latest, with
   breaking changes highlighted; plus **bump-safety analysis** that cross-references those
   breaking changes against how _your_ code actually uses the package
