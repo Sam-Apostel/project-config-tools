@@ -461,6 +461,10 @@
         font-size: 13.5px;
         padding: var(--sp-5) 2px var(--sp-2);
       }
+      /* the class sets display:flex, which would otherwise beat the UA [hidden] rule */
+      .pg-scan[hidden] {
+        display: none;
+      }
       .spinner {
         width: 15px;
         height: 15px;
@@ -1271,10 +1275,10 @@
           </div>
           <h2>See every fix on <em>your</em> repo, as a diff.</h2>
           <p class="lede">
-            Paste any public GitHub repo. The engine reads it — never runs it — and finds the
-            outdated deps, vulnerabilities, deprecations and toolchain smells, then hands you a
-            reviewed diff. This panel simulates the hosted flow; the same scan runs in your terminal
-            today with <code>npx @apostel/visual-config try &lt;owner/repo&gt;</code>.
+            Paste any public GitHub repo and this runs the real scan live: it clones read-only —
+            never runs your code — finds the outdated deps, vulnerabilities and deprecations, and
+            hands you a format-preserving upgrade diff. The same scan runs in your terminal with
+            <code>npx @apostel/visual-config try &lt;owner/repo&gt;</code>.
           </p>
 
           <div class="card pg">
@@ -1288,7 +1292,7 @@
                   <span class="pfx">github.com/</span>
                   <input
                     id="tryRepo"
-                    value="acme/storefront"
+                    value="sindresorhus/got"
                     spellcheck="false"
                     aria-label="GitHub repository"
                   />
@@ -1297,20 +1301,20 @@
               </div>
               <div class="pg-examples">
                 Try:
-                <button data-ex="vercel/next.js">vercel/next.js</button>
                 <button data-ex="sindresorhus/got">sindresorhus/got</button>
-                <button data-ex="acme/storefront">acme/storefront</button>
+                <button data-ex="sindresorhus/slugify">sindresorhus/slugify</button>
+                <button data-ex="chalk/chalk">chalk/chalk</button>
               </div>
 
               <div class="pg-scan" id="tryScan" hidden>
                 <span class="spinner"></span>
-                <span id="tryScanText">Cloning acme/storefront (read-only)…</span>
+                <span id="tryScanText">Scanning sindresorhus/got (read-only)…</span>
               </div>
 
               <div class="pg-results" id="tryResults">
                 <div class="pg-found">
-                  <h3 id="tryFoundH">We found 4 things worth fixing</h3>
-                  <span class="n">toggle any of them — the diff updates live</span>
+                  <h3 id="tryFoundH">Findings</h3>
+                  <span class="n">the real scan, from your terminal's engine</span>
                 </div>
                 <div class="chips" id="tryChips"></div>
 
@@ -1949,9 +1953,181 @@ apply_change  undo              list_journal</pre>
         });
       })();
 
-      /* hosted playground (#try): simulated URL → diff, same shape as the CLI `try` */
+      /* hosted playground (#try): live scan via the hosted try-api, offline sample as fallback */
       (() => {
-        const FIX = {
+        // The deployed backend (packages/try-api). Same scan as `npx @apostel/visual-config try`.
+        const ENDPOINT = 'https://try-api-production.up.railway.app';
+
+        const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const chips = document.getElementById('tryChips');
+        const diffEl = document.getElementById('tryDiff');
+        const statEl = document.getElementById('tryStat');
+        const status = document.getElementById('tryStatus');
+        const foundH = document.getElementById('tryFoundH');
+        const results = document.getElementById('tryResults');
+        const scan = document.getElementById('tryScan');
+        const scanText = document.getElementById('tryScanText');
+        const repo = document.getElementById('tryRepo');
+        const copyBtn = document.getElementById('tryCopy');
+        const uniq = (a) => [...new Set(a)];
+        const say = (m) => {
+          status.textContent = m;
+        };
+
+        // The current git-apply-able patch (real upgrade diff, or the sample's selection).
+        let currentPatch = '';
+
+        function setStat(files, add, del) {
+          if (!files) {
+            statEl.textContent = '0 files changed';
+            return;
+          }
+          statEl.innerHTML =
+            files +
+            ' file' +
+            (files > 1 ? 's' : '') +
+            ' changed &nbsp; <span class="p">+' +
+            add +
+            '</span> &nbsp; <span class="m">−' +
+            del +
+            '</span>';
+        }
+        function emptyDiff(msg) {
+          diffEl.innerHTML = '<div class="pg-empty">' + esc(msg) + '</div>';
+          setStat(0, 0, 0);
+        }
+        function clearChips() {
+          chips.innerHTML = '';
+        }
+        function addChip(o) {
+          const b = document.createElement('button');
+          b.className = 'chip';
+          b.type = 'button';
+          b.setAttribute('aria-pressed', o.pressed ? 'true' : 'false');
+          b.innerHTML =
+            '<span class="box" aria-hidden="true">✓</span>' +
+            '<span class="txt"><b>' +
+            esc(o.label) +
+            '</b><div class="d">' +
+            esc(o.desc) +
+            '</div></span>' +
+            '<span class="sev ' +
+            o.sev +
+            '">' +
+            esc(o.sevText) +
+            '</span>';
+          if (o.onClick) b.addEventListener('click', () => o.onClick(b));
+          chips.appendChild(b);
+          return b;
+        }
+
+        // Render a unified-diff string into the diff pane (the engine's real patch, or a sample's).
+        function renderPatch(patch) {
+          let html = '',
+            add = 0,
+            del = 0,
+            files = 0;
+          for (const raw of patch.split('\n')) {
+            if (raw.startsWith('Index: ') || /^={3,}$/.test(raw) || raw.startsWith('diff '))
+              continue;
+            if (raw.startsWith('+++ ')) {
+              const file = raw.slice(4).replace(/\t.*$/, '').replace(/^b\//, '');
+              html += '<div class="file">' + esc(file) + '</div>';
+              files++;
+              continue;
+            }
+            if (raw.startsWith('--- ')) continue;
+            if (raw.startsWith('@@')) {
+              html += '<span class="hunk">' + esc(raw) + '</span>';
+              continue;
+            }
+            const t = raw[0] === '+' ? 'add' : raw[0] === '-' ? 'del' : 'ctx';
+            if (t === 'add') add++;
+            else if (t === 'del') del++;
+            const text = t === 'ctx' ? raw.replace(/^ /, '') : raw.slice(1);
+            html += '<span class="ln ' + t + '">' + esc(text) + '</span>';
+          }
+          diffEl.innerHTML = html || '<div class="pg-empty">No file changes.</div>';
+          setStat(files, add, del);
+        }
+
+        // ---- live results from the hosted API ----
+        function renderReal(data) {
+          clearChips();
+          const c = data.counts || {};
+          const total = (c.outdated || 0) + (c.vulnerable || 0) + (c.deprecated || 0);
+          foundH.textContent = total
+            ? 'We found ' +
+              total +
+              ' thing' +
+              (total > 1 ? 's' : '') +
+              ' worth fixing in ' +
+              data.repo
+            : data.repo + ' looks healthy — nothing outdated, vulnerable, or deprecated';
+          currentPatch = data.upgrade && data.upgrade.available ? data.upgrade.patch : '';
+          let shown = false;
+          const namesOf = (kind) =>
+            uniq((data.findings || []).filter((f) => f.kind === kind).map((f) => f.target));
+
+          if (c.vulnerable) {
+            addChip({
+              label: c.vulnerable + ' vulnerabilit' + (c.vulnerable > 1 ? 'ies' : 'y'),
+              desc: namesOf('vulnerability').join(', '),
+              sev: 'danger',
+              sevText: 'security',
+              pressed: false,
+              onClick: () =>
+                say(
+                  'Bumping to the latest versions clears most advisories — see the upgrade diff.',
+                ),
+            });
+          }
+          if (c.outdated) {
+            const names = namesOf('outdated');
+            addChip({
+              label: c.outdated + ' outdated ' + (c.outdated > 1 ? 'dependencies' : 'dependency'),
+              desc: names.slice(0, 6).join(', ') + (names.length > 6 ? ' …' : ''),
+              sev: 'warn',
+              sevText: 'outdated',
+              pressed: true,
+              onClick: (b) => {
+                shown = !shown;
+                b.setAttribute('aria-pressed', shown ? 'true' : 'false');
+                say('');
+                if (shown && currentPatch) renderPatch(currentPatch);
+                else emptyDiff('Select the upgrade to preview its diff.');
+              },
+            });
+          }
+          if (c.deprecated) {
+            addChip({
+              label: c.deprecated + ' deprecated',
+              desc: (data.findings || [])
+                .filter((f) => f.kind === 'deprecation')
+                .map((f) => f.target + (f.alternative ? ' → ' + f.alternative : ''))
+                .join(', '),
+              sev: 'warn',
+              sevText: 'deprecated',
+              pressed: false,
+              onClick: () => say('Deprecated packages need a migration, not just a version bump.'),
+            });
+          }
+
+          if (currentPatch) {
+            renderPatch(currentPatch);
+            shown = true;
+          } else {
+            emptyDiff(
+              total
+                ? 'These findings need a manual migration — no one-shot upgrade diff.'
+                : 'Dependencies look current — nothing to upgrade.',
+            );
+          }
+        }
+
+        // ---- offline sample (shown only when the hosted API can't be reached) ----
+        const SAMPLE = {
+          order: ['security', 'outdated', 'deprecated', 'biome'],
           security: {
             label: '2 vulnerabilities',
             desc: 'lodash (prototype pollution), semver (ReDoS) — both patchable',
@@ -2044,184 +2220,141 @@ apply_change  undo              list_journal</pre>
             ],
           },
         };
-        const ORDER = ['security', 'outdated', 'deprecated', 'biome'];
-        const selected = {};
-
-        const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-        const chips = document.getElementById('tryChips');
-        const diffEl = document.getElementById('tryDiff');
-        const statEl = document.getElementById('tryStat');
-        const status = document.getElementById('tryStatus');
-        const say = (msg) => {
-          status.textContent = msg;
-        };
-
-        ORDER.forEach((key) => {
-          const f = FIX[key];
-          const b = document.createElement('button');
-          b.className = 'chip';
-          b.type = 'button';
-          b.setAttribute('aria-pressed', 'false');
-          b.dataset.key = key;
-          b.innerHTML =
-            '<span class="box" aria-hidden="true">✓</span>' +
-            '<span class="txt"><b>' +
-            f.label +
-            '</b><div class="d">' +
-            f.desc +
-            '</div></span>' +
-            '<span class="sev ' +
-            f.sev +
-            '">' +
-            f.sevText +
-            '</span>';
-          b.addEventListener('click', () => {
-            selected[key] = !selected[key];
-            b.setAttribute('aria-pressed', selected[key] ? 'true' : 'false');
-            say('');
-            render();
-          });
-          chips.appendChild(b);
-        });
-
-        // Group selected fixes' blocks by file (package.json edits combine).
-        function group() {
-          let blocks = [];
-          ORDER.forEach((k) => {
-            if (selected[k]) blocks = blocks.concat(FIX[k].blocks);
-          });
-          const byFile = [];
-          blocks.forEach((blk) => {
-            const ex = byFile.find((x) => x.file === blk.file && x.op === blk.op);
-            if (ex) ex.lines = ex.lines.concat(blk.lines.filter((l) => l.t !== 'hunk'));
-            else byFile.push({ file: blk.file, op: blk.op, lines: blk.lines.slice() });
-          });
-          return byFile;
-        }
-
-        function render() {
-          const byFile = group();
-          if (byFile.length === 0) {
-            diffEl.innerHTML =
-              '<div class="pg-empty">Select a fix above to preview its diff.</div>';
-            statEl.textContent = '0 files changed';
-            return;
-          }
-          let html = '',
-            add = 0,
-            del = 0;
-          byFile.forEach((f) => {
-            const opHtml =
-              f.op === 'new'
-                ? '<span class="op new">new file</span> '
-                : f.op === 'del'
-                  ? '<span class="op del">deleted</span> '
-                  : '';
-            html += '<div class="file">' + opHtml + esc(f.file) + '</div>';
-            f.lines.forEach((l) => {
-              if (l.t === 'hunk') {
-                html += '<span class="hunk">' + esc(l.x) + '</span>';
-                return;
-              }
-              if (l.t === 'add') add++;
-              if (l.t === 'del') del++;
-              html += '<span class="ln ' + l.t + '">' + esc(l.x) + '</span>';
+        function runSample() {
+          clearChips();
+          foundH.textContent = 'A sample of what the scan finds';
+          const selected = {};
+          const render = () => {
+            let blocks = [];
+            SAMPLE.order.forEach((k) => {
+              if (selected[k]) blocks = blocks.concat(SAMPLE[k].blocks);
+            });
+            const byFile = [];
+            blocks.forEach((blk) => {
+              const ex = byFile.find((x) => x.file === blk.file && x.op === blk.op);
+              if (ex) ex.lines = ex.lines.concat(blk.lines.filter((l) => l.t !== 'hunk'));
+              else byFile.push({ file: blk.file, op: blk.op, lines: blk.lines.slice() });
+            });
+            if (!byFile.length) {
+              emptyDiff('Select a fix above to preview its diff.');
+              currentPatch = '';
+              return;
+            }
+            let html = '',
+              add = 0,
+              del = 0;
+            byFile.forEach((f) => {
+              const op =
+                f.op === 'new'
+                  ? '<span class="op new">new file</span> '
+                  : f.op === 'del'
+                    ? '<span class="op del">deleted</span> '
+                    : '';
+              html += '<div class="file">' + op + esc(f.file) + '</div>';
+              f.lines.forEach((l) => {
+                if (l.t === 'hunk') {
+                  html += '<span class="hunk">' + esc(l.x) + '</span>';
+                  return;
+                }
+                if (l.t === 'add') add++;
+                if (l.t === 'del') del++;
+                html += '<span class="ln ' + l.t + '">' + esc(l.x) + '</span>';
+              });
+            });
+            diffEl.innerHTML = html;
+            setStat(byFile.length, add, del);
+            currentPatch = byFile
+              .map((f) => {
+                const head =
+                  f.op === 'new'
+                    ? '--- /dev/null\n+++ b/' + f.file
+                    : f.op === 'del'
+                      ? '--- a/' + f.file + '\n+++ /dev/null'
+                      : '--- a/' + f.file + '\n+++ b/' + f.file;
+                const body = f.lines
+                  .map((l) =>
+                    l.t === 'hunk' ? l.x : (l.t === 'add' ? '+' : l.t === 'del' ? '-' : ' ') + l.x,
+                  )
+                  .join('\n');
+                return head + '\n' + body;
+              })
+              .join('\n');
+          };
+          SAMPLE.order.forEach((key) => {
+            const f = SAMPLE[key];
+            addChip({
+              label: f.label,
+              desc: f.desc,
+              sev: f.sev,
+              sevText: f.sevText,
+              pressed: key === 'security',
+              onClick: (b) => {
+                selected[key] = !selected[key];
+                b.setAttribute('aria-pressed', selected[key] ? 'true' : 'false');
+                say('');
+                render();
+              },
             });
           });
-          diffEl.innerHTML = html;
-          statEl.innerHTML =
-            byFile.length +
-            ' file' +
-            (byFile.length > 1 ? 's' : '') +
-            ' changed &nbsp; <span class="p">+' +
-            add +
-            '</span> &nbsp; <span class="m">−' +
-            del +
-            '</span>';
+          selected.security = true;
+          render();
         }
 
-        // A git-apply-shaped patch built from the current selection (for Copy patch).
-        function buildPatch() {
-          const byFile = group();
-          if (byFile.length === 0) return '';
-          return byFile
-            .map((f) => {
-              const head =
-                f.op === 'new'
-                  ? '--- /dev/null\n+++ b/' + f.file
-                  : f.op === 'del'
-                    ? '--- a/' + f.file + '\n+++ /dev/null'
-                    : '--- a/' + f.file + '\n+++ b/' + f.file;
-              const body = f.lines
-                .map((l) =>
-                  l.t === 'hunk' ? l.x : (l.t === 'add' ? '+' : l.t === 'del' ? '-' : ' ') + l.x,
-                )
-                .join('\n');
-              return head + '\n' + body;
-            })
-            .join('\n');
-        }
-
-        const results = document.getElementById('tryResults');
-        const scan = document.getElementById('tryScan');
-        const scanText = document.getElementById('tryScanText');
-        const repo = document.getElementById('tryRepo');
-
-        function analyze() {
+        // ---- analyze: hit the live endpoint, fall back to the sample if it's unreachable ----
+        async function analyze() {
           results.classList.remove('show');
           scan.hidden = false;
           say('');
-          const name = repo.value.trim() || 'acme/storefront';
-          const steps = [
-            'Cloning ' + name + ' (read-only)…',
-            'Reading package.json + configs…',
-            'Checking the npm advisory DB…',
-            'Building the diff…',
-          ];
-          let i = 0;
-          scanText.textContent = steps[0];
-          const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-          const iv = setInterval(
-            () => {
-              i++;
-              if (i < steps.length) {
-                scanText.textContent = steps[i];
-                return;
-              }
-              clearInterval(iv);
-              scan.hidden = true;
-              // Land the demo with the security fix preselected so a diff is on screen.
-              ORDER.forEach((k) => delete selected[k]);
-              selected.security = true;
-              [].forEach.call(chips.children, (c) => {
-                c.setAttribute('aria-pressed', selected[c.dataset.key] ? 'true' : 'false');
-              });
-              render();
-              results.classList.add('show');
-            },
-            reduce ? 120 : 460,
-          );
+          const name = repo.value.trim() || 'sindresorhus/got';
+          scanText.textContent = 'Scanning ' + name + ' (read-only)…';
+          let data = null,
+            errMsg = '';
+          try {
+            const res = await fetch(ENDPOINT + '/api/try?repo=' + encodeURIComponent(name), {
+              headers: { accept: 'application/json' },
+            });
+            const body = await res.json().catch(() => null);
+            if (res.ok && body) data = body;
+            else errMsg = (body && body.error) || 'scan failed (' + res.status + ')';
+          } catch {
+            errMsg = 'offline';
+          }
+          scan.hidden = true;
+          if (data) {
+            renderReal(data);
+          } else {
+            runSample();
+            say(
+              'Live scan unavailable' +
+                (errMsg && errMsg !== 'offline' ? ' — ' + errMsg : '') +
+                '. Showing a sample; the CLI works today: npx @apostel/visual-config try ' +
+                name,
+            );
+          }
+          results.classList.add('show');
         }
-        document.getElementById('tryAnalyze').addEventListener('click', analyze);
+        document.getElementById('tryAnalyze').addEventListener('click', () => {
+          void analyze();
+        });
         repo.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') analyze();
+          if (e.key === 'Enter') {
+            void analyze();
+          }
         });
         [].forEach.call(document.querySelectorAll('.pg-examples button'), (b) => {
           b.addEventListener('click', () => {
             repo.value = b.dataset.ex;
-            analyze();
+            void analyze();
           });
         });
 
-        const copyBtn = document.getElementById('tryCopy');
         copyBtn.addEventListener('click', async () => {
-          const patch = buildPatch();
-          if (!patch) {
+          if (!currentPatch) {
             say('Select a fix first.');
             return;
           }
           try {
-            await navigator.clipboard.writeText(patch + '\n');
+            await navigator.clipboard.writeText(currentPatch + '\n');
             copyBtn.textContent = 'Copied';
             setTimeout(() => (copyBtn.textContent = 'Copy patch'), 1600);
             say('Patch copied — git apply it anywhere.');
