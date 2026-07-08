@@ -1,5 +1,25 @@
 # @apostel/visual-config
 
+## 0.7.1
+
+### Patch Changes
+
+- [#27](https://github.com/Sam-Apostel/project-config-tools/pull/27) [`da5e3f9`](https://github.com/Sam-Apostel/project-config-tools/commit/da5e3f969e8a79e82ca6e4f4d8af866cf77f18f5) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - fix(cli): don't crash when no browser opener exists; use explorer.exe on WSL
+
+  `spawn()` reports a missing opener binary as an async `error` event, not a
+  synchronous throw, so the `try/catch` around `openBrowser` never caught it and a
+  missing `xdg-open` (headless Linux, WSL, minimal containers) took down the whole
+  daemon. The spawned child now gets an `error` handler so opening the browser is
+  genuinely best-effort — the URL is printed regardless. On WSL, where `xdg-open`
+  is usually absent, the opener falls back to `explorer.exe`, which opens the
+  Windows default browser.
+
+- Updated dependencies []:
+  - @apostel/visual-config-core@0.7.1
+  - @apostel/visual-config-mcp@0.7.1
+  - @apostel/visual-config-server@0.7.1
+  - @apostel/visual-config-ui@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes

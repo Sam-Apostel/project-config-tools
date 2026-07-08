@@ -1,5 +1,12 @@
 # @apostel/visual-config-kit
 
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @apostel/visual-config-core@0.7.1
+
 ## 0.7.0
 
 ### Patch Changes
