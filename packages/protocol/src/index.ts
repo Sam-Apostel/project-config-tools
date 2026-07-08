@@ -9,6 +9,7 @@ import type {
   ConfigView,
   Diagnostics,
   Improvement,
+  InstallSizes,
   JournalEntry,
   OperationInfo,
   ProjectModel,
@@ -62,6 +63,8 @@ export interface ServerFunctions {
   getConfigs(): Promise<ConfigView[]>;
   getConfig(path: string): Promise<ConfigView | undefined>;
   getScaffolds(): Promise<ScaffoldStatus[]>;
+  /** Per-dependency install-size footprint (unpacked size of each package's own files). */
+  getInstallSizes(): Promise<InstallSizes>;
   /** The workspace members and which one is active (empty members for a single-package project). */
   getWorkspace(): Promise<WorkspaceInfo>;
   /** Switch the active workspace member; pass '' to return to the root. Returns the new active project. */
@@ -96,6 +99,7 @@ export type {
   CatalogResult,
   Diagnostics,
   Improvement,
+  InstallSizes,
   BumpAnalysis,
   ReleaseNotes,
   ConfigView,

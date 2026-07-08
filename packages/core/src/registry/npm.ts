@@ -34,6 +34,11 @@ export interface Registry {
    * Only advisories affecting the supplied versions are returned. Optional.
    */
   advisories?(query: Record<string, string[]>): Promise<Record<string, Advisory[]>>;
+  /**
+   * Unpacked size in bytes of a package version's own files (`dist.unpackedSize`
+   * from the registry), or undefined if unknown. `version` defaults to `latest`.
+   */
+  unpackedSize?(name: string, version?: string): Promise<number | undefined>;
 }
 
 interface RawSearchResponse {
@@ -101,12 +106,32 @@ export class NpmRegistry implements Registry {
     return (await res.json()) as Record<string, Advisory[]>;
   }
 
+  async unpackedSize(name: string, version = 'latest'): Promise<number | undefined> {
+    const manifest = await this.manifest(name, version);
+    const size = manifest?.dist?.unpackedSize;
+    return typeof size === 'number' && size >= 0 ? size : undefined;
+  }
+
   private async latestManifest(
     name: string,
   ): Promise<{ version?: string; deprecated?: string | boolean } | undefined> {
-    const res = await this.fetchImpl(`${this.baseUrl}/${name}/latest`);
+    return this.manifest(name, 'latest');
+  }
+
+  private async manifest(
+    name: string,
+    version: string,
+  ): Promise<
+    | { version?: string; deprecated?: string | boolean; dist?: { unpackedSize?: number } }
+    | undefined
+  > {
+    const res = await this.fetchImpl(`${this.baseUrl}/${name}/${version}`);
     if (res.status === 404) return undefined;
     if (!res.ok) throw new Error(`Registry lookup failed for ${name}: ${res.status}`);
-    return (await res.json()) as { version?: string; deprecated?: string | boolean };
+    return (await res.json()) as {
+      version?: string;
+      deprecated?: string | boolean;
+      dist?: { unpackedSize?: number };
+    };
   }
 }

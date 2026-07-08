@@ -1,5 +1,6 @@
 import { basename, dirname, join, relative, sep } from 'node:path';
 import { matchesAnyGlob } from '../scope.js';
+import { readInstalledVersions } from './lockfile.js';
 import type {
   ConfigFileRef,
   DependencyEntry,
@@ -171,6 +172,14 @@ export async function detectProject(fs: FileSystem, root: string): Promise<Proje
     ...collectDeps(pkg.peerDependencies, 'peer'),
     ...collectDeps(pkg.optionalDependencies, 'optional'),
   ];
+
+  // Pin each dep to its exact installed version from the lockfile, when present,
+  // so diagnostics reflect what's actually installed rather than the range floor.
+  const installed = await readInstalledVersions(fs, root);
+  for (const dep of dependencies) {
+    const version = installed[dep.name];
+    if (version) dep.resolved = version;
+  }
 
   const configFiles: ConfigFileRef[] = [];
   for (const candidate of KNOWN_CONFIGS) {

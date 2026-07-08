@@ -124,6 +124,8 @@ export interface DependencyEntry {
   name: string;
   range: string;
   type: DependencyType;
+  /** Exact installed version from the lockfile, when one is present. */
+  resolved?: string;
 }
 
 export interface ScriptEntry {

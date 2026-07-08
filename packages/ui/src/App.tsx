@@ -42,6 +42,14 @@ type VulnInfo = { level: string; title: string; url?: string };
 type VulnMap = Map<string, VulnInfo[]>;
 type DeprecationMap = Map<string, { message: string; alternative?: string }>;
 type ChangelogMap = Map<string, ReleaseNotes[] | 'loading'>;
+type SizeMap = Map<string, number>;
+
+/** Human-readable bytes: 812 B, 40 kB, 1.6 MB. Decimal units, matching npm/registry. */
+function formatBytes(n: number): string {
+  if (n < 1000) return `${n} B`;
+  if (n < 1_000_000) return `${Math.round(n / 1000)} kB`;
+  return `${(n / 1_000_000).toFixed(1)} MB`;
+}
 
 /** Split a Diagnostics payload into the three per-dependency lookup maps the UI renders. */
 function mapDiagnostics(items: Diagnostic[]): {
@@ -89,6 +97,7 @@ export function App(): JSX.Element {
   const [vulns, setVulns] = useState<VulnMap>(new Map());
   const [deprecations, setDeprecations] = useState<DeprecationMap>(new Map());
   const [changelogs, setChangelogs] = useState<ChangelogMap>(new Map());
+  const [sizes, setSizes] = useState<SizeMap>(new Map());
   const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
   const [configs, setConfigs] = useState<ConfigView[]>([]);
   const [scaffolds, setScaffolds] = useState<ScaffoldStatus[]>([]);
@@ -124,7 +133,7 @@ export function App(): JSX.Element {
         setScaffolds(await connection.getScaffolds());
         setImprovements(await connection.getImprovements());
         setWorkspace(await connection.getWorkspace());
-        // Diagnostics hit the network; load them without blocking the UI.
+        // Diagnostics + sizes hit the network; load them without blocking the UI.
         connection
           .getDiagnostics()
           .then((diag) => {
@@ -133,6 +142,12 @@ export function App(): JSX.Element {
             setOutdated(outdated);
             setVulns(vulns);
             setDeprecations(deprecations);
+          })
+          .catch(() => undefined);
+        connection
+          .getInstallSizes()
+          .then((s) => {
+            if (!closed) setSizes(new Map(s.packages.map((p) => [p.name, p.bytes])));
           })
           .catch(() => undefined);
       })
@@ -150,6 +165,10 @@ export function App(): JSX.Element {
     setConfigs(await connection.getConfigs());
     setScaffolds(await connection.getScaffolds());
     setImprovements(await connection.getImprovements());
+    connection
+      .getInstallSizes()
+      .then((s) => setSizes(new Map(s.packages.map((p) => [p.name, p.bytes]))))
+      .catch(() => undefined);
   }, []);
 
   const switchPackage = useCallback(
@@ -169,6 +188,7 @@ export function App(): JSX.Element {
         setDeprecations(new Map());
         setChangelogs(new Map());
         setBumps(new Map());
+        setSizes(new Map());
         setSection('overview');
         setJournal(await connection.listJournal());
         setTsconfig(await connection.getTsconfig());
@@ -183,6 +203,10 @@ export function App(): JSX.Element {
             setVulns(mapped.vulns);
             setDeprecations(mapped.deprecations);
           })
+          .catch(() => undefined);
+        connection
+          .getInstallSizes()
+          .then((s) => setSizes(new Map(s.packages.map((p) => [p.name, p.bytes]))))
           .catch(() => undefined);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -477,6 +501,7 @@ export function App(): JSX.Element {
             deprecations={deprecations}
             changelogs={changelogs}
             bumps={bumps}
+            sizes={sizes}
             onAnalyze={analyzeBump}
             onChangelog={loadChangelog}
             onUpgrade={(name, latest, dev) => planInstall(name, `^${latest}`, dev)}
@@ -726,6 +751,7 @@ function Dependencies(props: {
   deprecations: DeprecationMap;
   changelogs: ChangelogMap;
   bumps: Map<string, BumpAnalysis | 'loading'>;
+  sizes: SizeMap;
   onAnalyze: (name: string) => void;
   onChangelog: (name: string) => void;
   onUpgrade: (name: string, latest: string, dev: boolean) => void;
@@ -734,12 +760,18 @@ function Dependencies(props: {
 }): JSX.Element {
   const outdatedCount = props.deps.filter((d) => props.outdated.has(d.name)).length;
   const vulnCount = props.deps.filter((d) => props.vulns.has(d.name)).length;
+  const totalBytes = [...props.sizes.values()].reduce((a, b) => a + b, 0);
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <h2 className="section-title" style={{ flex: 1 }}>
           Dependencies
         </h2>
+        {totalBytes > 0 && (
+          <span className="badge" title="Sum of each dependency's own unpacked size">
+            {formatBytes(totalBytes)} on disk
+          </span>
+        )}
         {vulnCount > 0 && <span className="badge risk-breaking">{vulnCount} vulnerable</span>}
         {outdatedCount > 0 && (
           <button className="btn primary small" onClick={props.onUpgradeAll}>
@@ -762,9 +794,18 @@ function Dependencies(props: {
           return (
             <div className="row" key={`${d.type}:${d.name}`} style={{ flexWrap: 'wrap' }}>
               <span className="name grow">{d.name}</span>
-              <span className="name" style={{ color: 'var(--text-muted)' }}>
-                {d.range}
+              <span
+                className="name"
+                style={{ color: 'var(--text-muted)' }}
+                title={d.resolved ? `installed: ${d.resolved}` : undefined}
+              >
+                {d.resolved ?? d.range}
               </span>
+              {props.sizes.has(d.name) && (
+                <span className="badge" title="Unpacked size of this package's own files">
+                  {formatBytes(props.sizes.get(d.name)!)}
+                </span>
+              )}
               {vuln && (
                 <span className="badge risk-breaking" title={vuln.map((v) => v.title).join('\n')}>
                   {vuln.length} vuln{vuln.length > 1 ? 's' : ''}

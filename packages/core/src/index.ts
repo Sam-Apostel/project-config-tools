@@ -112,6 +112,8 @@ export {
   type DiagnosticSeverity,
   type DiagnosticSource,
 } from './diagnostics.js';
+export { computeInstallSizes, type InstallSizes, type PackageSize } from './project/sizes.js';
+export { readInstalledVersions } from './project/lockfile.js';
 export { scanUsage } from './migration/usage.js';
 export { analyzeBump } from './migration/analyze.js';
 export {

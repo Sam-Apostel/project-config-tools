@@ -29,7 +29,9 @@ typecheck + CI):
 - ✅ **Dependency health** — outdated **+ vulnerabilities** (npm advisory DB) **+
   deprecations** (with maintainer-suggested alternatives); a **changelog viewer**
   (GitHub release notes + breaking changes) and **code-aware bump-safety analysis**
-  (breaking changes cross-referenced against the app's real usage).
+  (breaking changes cross-referenced against the app's real usage). Diagnostics are
+  **lockfile-exact** — the installed version from `pnpm-lock`/`package-lock`/`yarn.lock`,
+  not the range floor — plus a per-package **install-size** footprint.
 - ✅ **Config adapters** — view/edit **Biome / Prettier / ESLint / oxlint / tsconfig**
   as guided forms with curated factual docs; **read-only static views** of JS/TS
   configs (`next.config`, `vite.config`, eslint flat) via `@babel/parser`.
@@ -51,9 +53,9 @@ typecheck + CI):
   (example: `@apostel/visual-config-opinion-ts-strict`).
 - ✅ **Release pipeline** — Changesets + GitHub Actions publishing under `@apostel/*`
   via **OIDC Trusted Publishing** (no token), with per-package GitHub Releases.
-- 🔜 Not yet: **lockfile-exact** diagnostics, cross-workspace version alignment,
-  guided framework-config _editing_ (AST rewrite), a headless **`check`** mode, IDE
-  extensions, and the **hosted "point at any repo → diff/PR"** playground.
+- 🔜 Not yet: cross-workspace version alignment, guided framework-config _editing_
+  (AST rewrite), a headless **`check`** mode, IDE extensions, and the **hosted
+  "point at any repo → PR"** flow (the diff playground is live).
 
 ---
 
