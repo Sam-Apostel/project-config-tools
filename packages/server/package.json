@@ -1,6 +1,6 @@
 {
   "name": "@apostel/visual-config-server",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "type": "module",
   "description": "The local daemon: birpc over WebSocket, static UI hosting, script tasks.",
   "license": "MIT",

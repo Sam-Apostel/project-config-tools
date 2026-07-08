@@ -1,6 +1,6 @@
 {
   "name": "@apostel/visual-config-try-api",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "description": "Stateless hosted service behind the marketing playground: clone a public repo (read-only), run the real engine, return findings + a diff as JSON. Never executes the target repo.",
