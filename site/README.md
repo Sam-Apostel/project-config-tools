@@ -21,24 +21,31 @@ sections, no identical card grids, AA contrast in both themes (`--text-faint`
 is for the product UI's placeholders, not for prose on this page), and go easy
 on em-dashes.
 
-## Who the page talks to
+## Structure (post-feedback rework)
 
-Each section is aimed at a specific audience with a specific hook:
+The page leads with what the tool is and shows features with real screenshots
+before asking for anything (no premature "star us", no unexplained npx). Section
+order: hero (what it is, one command, annotated screenshot) → features (shown,
+not listed; includes agents/MCP; "coming next" merged in — no separate roadmap
+section) → interactive diff demo → get started (the three commands) →
+ecosystem tiles → package map → invariants → design docs (labeled as
+contributor material, since the repo has no separate usage docs yet) → closing
+CTA with the GitHub star ask at the end, once the visitor knows the project.
 
-| Audience               | Hook                                                                                  | Section                    |
-| ---------------------- | ------------------------------------------------------------------------------------- | -------------------------- |
-| App developers         | stop hand-editing config; catalog install kills the `npx`-typo risk; undo everything  | hero, demo, gallery        |
-| Agent users/builders   | `visual-config mcp` — validated, reversible config tools instead of free-typed shell  | agents strip               |
-| Tool/framework authors | built-ins have no privileges a plugin can't have; operations become UI + MCP for free | audiences, package map     |
-| Opinion authors        | attributed opinion packs — your taste, labeled as yours, never baked in               | audiences                  |
-| Contributors/curious   | the architecture map, honest roadmap status, and all the vision docs                  | package map, roadmap, docs |
+**TODO:** a hosted, clickable demo instance was reportedly prepared by another
+agent, but no deployment exists on Railway/Vercel and the repo has no deploy
+config; the closest artifact is the `visual-config try <owner/repo>` CLI flow.
+When a hosted URL exists, link it prominently from the demo section.
 
 ## Screenshots
 
 `assets/*.png` are real captures (1440×900 @2x, dark mode) of the built UI
-running against a throwaway demo project, driven by a `playwright-core` script.
+running against a throwaway demo project seeded with vulnerable (`lodash@4.17.20`),
+deprecated (`request`), and outdated packages plus a `.prettierrc.json`, so the
+health facts and Config view have something to show. `diff-sheet-crop.png` is an
+element screenshot of just the sheet, used as the mobile hero image.
 To regenerate after UI changes: build the UI (`pnpm build:ui`), start the daemon
-against a small demo project, and script the flows shown in the gallery
-(Overview, Dependencies, Diff Sheet via "Upgrade all", Catalog search,
+against a small demo project, and script the flows shown on the page
+(Overview, Dependencies, Diff Sheet via "Upgrade all", Config, Catalog search,
 TypeScript, a running script, a tsconfig edit, History). Keep such scripts out
 of the committed tree (`.vc-tmp/` is gitignored) per `CLAUDE.md`.
