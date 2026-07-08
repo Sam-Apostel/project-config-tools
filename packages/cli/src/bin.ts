@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { resolve, dirname, join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { openProject, discoverPlugins } from '@apostel/visual-config-core';
@@ -51,14 +51,31 @@ function resolveUiDir(override?: string): string | undefined {
   }
 }
 
+function isWsl(): boolean {
+  if (process.platform !== 'linux') return false;
+  try {
+    return readFileSync('/proc/version', 'utf8').toLowerCase().includes('microsoft');
+  } catch {
+    return false;
+  }
+}
+
 function openBrowser(url: string): void {
   const opener =
-    process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open';
-  try {
-    spawn(opener, [url], { stdio: 'ignore', detached: true }).unref();
-  } catch {
+    process.platform === 'darwin'
+      ? 'open'
+      : process.platform === 'win32'
+        ? 'explorer'
+        : isWsl()
+          ? 'explorer.exe' // WSL usually lacks xdg-open; explorer.exe opens the Windows default browser
+          : 'xdg-open';
+  // Spawn failures (e.g. no xdg-open on headless Linux) arrive as an async
+  // 'error' event, not a throw — an unhandled one would crash the daemon.
+  const child = spawn(opener, [url], { stdio: 'ignore', detached: true });
+  child.on('error', () => {
     // best effort; the URL is printed regardless
-  }
+  });
+  child.unref();
 }
 
 async function main(): Promise<void> {
