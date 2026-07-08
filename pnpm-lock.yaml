@@ -119,6 +119,16 @@ importers:
         specifier: ^8.5.13
         version: 8.18.1
 
+  packages/try-api:
+    dependencies:
+      '@apostel/visual-config-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      esbuild:
+        specifier: ^0.21.5
+        version: 0.21.5
+
   packages/ui:
     dependencies:
       birpc:

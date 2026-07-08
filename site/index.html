@@ -364,6 +364,349 @@
         width: 100%;
         height: auto;
       }
+
+      /* hosted playground (#try): the URL → diff surface, in the real token system */
+      #try h2 em {
+        font-style: normal;
+        color: var(--brand);
+      }
+      .pg {
+        padding: 0;
+        overflow: hidden;
+        box-shadow: var(--shadow-2);
+        margin-top: var(--sp-6);
+      }
+      .pg .pg-chrome {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-subtle);
+      }
+      .pg .pg-chrome i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border-hi);
+        display: block;
+      }
+      .pg .pg-chrome .url {
+        margin-left: var(--sp-4);
+        font: var(--t-caption);
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+      }
+      .pg-body {
+        padding: var(--sp-6);
+      }
+      .urlbar {
+        display: flex;
+        gap: var(--sp-4);
+        flex-wrap: wrap;
+      }
+      .urlbar .field {
+        flex: 1;
+        min-width: 240px;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        background: var(--bg-subtle);
+        border: 1px solid var(--border-hi);
+        border-radius: var(--r-md);
+        padding: 0 var(--sp-4);
+        font-family: var(--font-mono);
+        font-size: 14px;
+      }
+      .urlbar .field .pfx {
+        color: var(--text-faint);
+      }
+      .urlbar input {
+        flex: 1;
+        background: none;
+        border: 0;
+        color: var(--text);
+        font-family: var(--font-mono);
+        font-size: 14px;
+        padding: 11px 0;
+        outline: none;
+        min-width: 80px;
+      }
+      .pg-examples {
+        margin-top: var(--sp-4);
+        font-size: 12.5px;
+        color: var(--text-faint);
+        display: flex;
+        gap: var(--sp-4);
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .pg-examples button {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: none;
+        border: 0;
+        color: var(--brand);
+        cursor: pointer;
+        padding: 0;
+      }
+      .pg-examples button:hover {
+        text-decoration: underline;
+      }
+      .pg-scan {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-4);
+        color: var(--text-muted);
+        font-size: 13.5px;
+        padding: var(--sp-5) 2px var(--sp-2);
+      }
+      .spinner {
+        width: 15px;
+        height: 15px;
+        border: 2px solid var(--border-hi);
+        border-top-color: var(--brand);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner {
+          animation: none;
+        }
+      }
+      .pg-results {
+        display: none;
+        margin-top: var(--sp-6);
+      }
+      .pg-results.show {
+        display: block;
+      }
+      .pg-found {
+        display: flex;
+        align-items: baseline;
+        gap: var(--sp-4);
+        flex-wrap: wrap;
+        margin-bottom: var(--sp-4);
+      }
+      .pg-found h3 {
+        font-size: 15px;
+        margin: 0;
+      }
+      .pg-found .n {
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      .chips {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-3);
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-4);
+        width: 100%;
+        text-align: left;
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 11px 13px;
+        cursor: pointer;
+        color: var(--text);
+        transition:
+          border-color 0.12s var(--ease-out),
+          background 0.12s var(--ease-out);
+      }
+      .chip:hover {
+        border-color: var(--border-hi);
+      }
+      .chip[aria-pressed='true'] {
+        border-color: var(--brand);
+        background: var(--brand-quiet);
+      }
+      .chip .box {
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        border: 1.5px solid var(--border-hi);
+        flex: none;
+        display: grid;
+        place-items: center;
+        color: var(--bg);
+        font-size: 12px;
+      }
+      .chip[aria-pressed='true'] .box {
+        background: var(--brand);
+        border-color: var(--brand);
+      }
+      .chip .txt {
+        flex: 1;
+      }
+      .chip .txt b {
+        font-weight: 600;
+      }
+      .chip .txt .d {
+        color: var(--text-muted);
+        font-size: 12.5px;
+      }
+      .chip .sev {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      .chip .sev.danger {
+        color: var(--danger);
+        border-color: var(--danger);
+        background: var(--danger-quiet);
+      }
+      .chip .sev.warn {
+        color: var(--warn);
+        border-color: var(--warn);
+        background: var(--warn-quiet);
+      }
+      .chip .sev.info {
+        color: var(--brand);
+        border-color: var(--brand);
+        background: var(--brand-quiet);
+      }
+      .pg-diffwrap {
+        margin-top: var(--sp-6);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        overflow: hidden;
+      }
+      .pg-diffbar {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        flex-wrap: wrap;
+        padding: 10px 13px;
+        background: var(--bg-subtle);
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .pg-diffbar .stat {
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+      }
+      .pg-diffbar .stat .p {
+        color: var(--ok);
+      }
+      .pg-diffbar .stat .m {
+        color: var(--danger);
+      }
+      .pg-diffbar .spacer {
+        flex: 1;
+      }
+      .pg-diff {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        line-height: 1.55;
+        overflow-x: auto;
+        max-height: 340px;
+        overflow-y: auto;
+        background: var(--surface);
+      }
+      .pg-diff .file {
+        padding: 8px 13px;
+        color: var(--text-muted);
+        border-top: 1px solid var(--border);
+        background: var(--bg-subtle);
+      }
+      .pg-diff .file:first-child {
+        border-top: 0;
+      }
+      .pg-diff .file .op {
+        font-weight: 700;
+      }
+      .pg-diff .file .op.new {
+        color: var(--ok);
+      }
+      .pg-diff .file .op.del {
+        color: var(--danger);
+      }
+      .pg-diff .ln {
+        display: block;
+        padding: 0 13px;
+        white-space: pre;
+      }
+      .pg-diff .ln.add {
+        background: var(--ok-quiet);
+        color: var(--text);
+      }
+      .pg-diff .ln.add::before {
+        content: '+ ';
+        color: var(--ok);
+      }
+      .pg-diff .ln.del {
+        background: var(--danger-quiet);
+        color: var(--text);
+      }
+      .pg-diff .ln.del::before {
+        content: '- ';
+        color: var(--danger);
+      }
+      .pg-diff .ln.ctx {
+        color: var(--text-faint);
+      }
+      .pg-diff .ln.ctx::before {
+        content: '  ';
+      }
+      .pg-diff .hunk {
+        display: block;
+        color: var(--brand);
+        padding: 2px 13px;
+        background: var(--brand-quiet);
+      }
+      .pg-empty {
+        padding: 26px;
+        text-align: center;
+        color: var(--text-faint);
+        font-size: 13.5px;
+      }
+      .pg-status {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        flex-basis: 100%;
+      }
+      .pg-status:empty {
+        display: none;
+      }
+      .soon {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-faint);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 1px 6px;
+      }
+      .pg-trust {
+        display: flex;
+        gap: 8px 20px;
+        flex-wrap: wrap;
+        margin-top: var(--sp-5);
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+      .pg-trust span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .pg-trust .dot {
+        color: var(--ok);
+      }
+
       .shot-cap {
         font: var(--t-small);
         color: var(--text-muted);
@@ -851,6 +1194,7 @@
       <div class="wrap">
         <a class="wordmark" href="#top">visual<span class="tld">-config</span></a>
         <nav class="top" aria-label="Sections">
+          <a href="#try">Playground</a>
           <a href="#features">Features</a>
           <a href="#demo">Demo</a>
           <a
@@ -915,6 +1259,85 @@
             deprecated, nine outdated. Every fix is a button, and every button ends in a diff you
             review first.
           </figcaption>
+        </div>
+      </section>
+
+      <!-- hosted playground -->
+      <section id="try">
+        <div class="wrap">
+          <div class="hero-badges">
+            <span class="badge info">hosted playground</span>
+            <span class="badge warn">preview</span>
+          </div>
+          <h2>See every fix on <em>your</em> repo, as a diff.</h2>
+          <p class="lede">
+            Paste any public GitHub repo. The engine reads it — never runs it — and finds the
+            outdated deps, vulnerabilities, deprecations and toolchain smells, then hands you a
+            reviewed diff. This panel simulates the hosted flow; the same scan runs in your terminal
+            today with <code>npx @apostel/visual-config try &lt;owner/repo&gt;</code>.
+          </p>
+
+          <div class="card pg">
+            <div class="pg-chrome" aria-hidden="true">
+              <i></i><i></i><i></i>
+              <span class="url">visual-config.dev/try</span>
+            </div>
+            <div class="pg-body">
+              <div class="urlbar">
+                <label class="field">
+                  <span class="pfx">github.com/</span>
+                  <input
+                    id="tryRepo"
+                    value="acme/storefront"
+                    spellcheck="false"
+                    aria-label="GitHub repository"
+                  />
+                </label>
+                <button class="btn primary" id="tryAnalyze">Analyze repo</button>
+              </div>
+              <div class="pg-examples">
+                Try:
+                <button data-ex="vercel/next.js">vercel/next.js</button>
+                <button data-ex="sindresorhus/got">sindresorhus/got</button>
+                <button data-ex="acme/storefront">acme/storefront</button>
+              </div>
+
+              <div class="pg-scan" id="tryScan" hidden>
+                <span class="spinner"></span>
+                <span id="tryScanText">Cloning acme/storefront (read-only)…</span>
+              </div>
+
+              <div class="pg-results" id="tryResults">
+                <div class="pg-found">
+                  <h3 id="tryFoundH">We found 4 things worth fixing</h3>
+                  <span class="n">toggle any of them — the diff updates live</span>
+                </div>
+                <div class="chips" id="tryChips"></div>
+
+                <div class="pg-diffwrap">
+                  <div class="pg-diffbar">
+                    <span class="stat" id="tryStat">0 files changed</span>
+                    <span class="spacer"></span>
+                    <button class="btn small" id="tryCopy">Copy patch</button>
+                    <button class="btn small primary" id="tryPr">
+                      Open pull request <span class="soon">soon</span>
+                    </button>
+                    <span class="pg-status" id="tryStatus" role="status" aria-live="polite"></span>
+                  </div>
+                  <div class="pg-diff" id="tryDiff">
+                    <div class="pg-empty">Select a fix above to preview its diff.</div>
+                  </div>
+                </div>
+
+                <div class="pg-trust">
+                  <span><span class="dot">●</span> Read-only clone</span>
+                  <span><span class="dot">●</span> Your code is never executed</span>
+                  <span><span class="dot">●</span> Output is a diff you review</span>
+                  <span><span class="dot">●</span> Nothing is written without a PR you open</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1523,6 +1946,295 @@ apply_change  undo              list_journal</pre>
           undoBtn.style.display = 'none';
           hint.textContent =
             'Undone. package.json is byte-for-byte back where it started. Every change works like this.';
+        });
+      })();
+
+      /* hosted playground (#try): simulated URL → diff, same shape as the CLI `try` */
+      (() => {
+        const FIX = {
+          security: {
+            label: '2 vulnerabilities',
+            desc: 'lodash (prototype pollution), semver (ReDoS) — both patchable',
+            sev: 'danger',
+            sevText: 'high',
+            blocks: [
+              {
+                file: 'package.json',
+                op: '',
+                lines: [
+                  { t: 'hunk', x: '@@ dependencies @@' },
+                  { t: 'del', x: '    "lodash": "^4.17.15",' },
+                  { t: 'add', x: '    "lodash": "^4.17.21",' },
+                  { t: 'del', x: '    "semver": "^6.3.0",' },
+                  { t: 'add', x: '    "semver": "^6.3.1",' },
+                ],
+              },
+            ],
+          },
+          outdated: {
+            label: '8 outdated dependencies',
+            desc: 'next, react, zod, typescript, vitest … all safe minors per the changelog',
+            sev: 'warn',
+            sevText: 'outdated',
+            blocks: [
+              {
+                file: 'package.json',
+                op: '',
+                lines: [
+                  { t: 'hunk', x: '@@ dependencies @@' },
+                  { t: 'del', x: '    "next": "^14.1.0",' },
+                  { t: 'add', x: '    "next": "^14.2.5",' },
+                  { t: 'del', x: '    "react": "^18.2.0",' },
+                  { t: 'add', x: '    "react": "^18.3.1",' },
+                  { t: 'del', x: '    "zod": "^3.22.0",' },
+                  { t: 'add', x: '    "zod": "^3.23.8",' },
+                  { t: 'ctx', x: '    … 5 more' },
+                ],
+              },
+            ],
+          },
+          deprecated: {
+            label: '1 deprecated package',
+            desc: 'request is deprecated — the maintainer points to got',
+            sev: 'warn',
+            sevText: 'deprecated',
+            blocks: [
+              {
+                file: 'package.json',
+                op: '',
+                lines: [
+                  { t: 'hunk', x: '@@ dependencies @@' },
+                  { t: 'del', x: '    "request": "^2.88.2",' },
+                  { t: 'add', x: '    "got": "^14.4.2",' },
+                ],
+              },
+            ],
+          },
+          biome: {
+            label: 'ESLint + Prettier → Biome',
+            desc: 'one formatter/linter — removes 2 config files and 5 deps, adds scripts',
+            sev: 'info',
+            sevText: 'swap',
+            blocks: [
+              { file: 'biome.json', op: 'new', lines: [{ t: 'add', x: '{}' }] },
+              {
+                file: '.eslintrc.json',
+                op: 'del',
+                lines: [{ t: 'del', x: '{ "root": true, "extends": ["next"] }' }],
+              },
+              {
+                file: '.prettierrc',
+                op: 'del',
+                lines: [{ t: 'del', x: '{ "semi": false, "singleQuote": true }' }],
+              },
+              {
+                file: 'package.json',
+                op: '',
+                lines: [
+                  { t: 'hunk', x: '@@ devDependencies / scripts @@' },
+                  { t: 'del', x: '    "eslint": "^9.9.0",' },
+                  { t: 'del', x: '    "prettier": "^3.3.3",' },
+                  { t: 'del', x: '    "eslint-config-next": "^14.1.0",' },
+                  { t: 'add', x: '    "@biomejs/biome": "^1.9.4",' },
+                  { t: 'del', x: '    "lint": "eslint .",' },
+                  { t: 'add', x: '    "lint": "biome lint .",' },
+                  { t: 'add', x: '    "format": "biome format --write .",' },
+                ],
+              },
+            ],
+          },
+        };
+        const ORDER = ['security', 'outdated', 'deprecated', 'biome'];
+        const selected = {};
+
+        const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const chips = document.getElementById('tryChips');
+        const diffEl = document.getElementById('tryDiff');
+        const statEl = document.getElementById('tryStat');
+        const status = document.getElementById('tryStatus');
+        const say = (msg) => {
+          status.textContent = msg;
+        };
+
+        ORDER.forEach((key) => {
+          const f = FIX[key];
+          const b = document.createElement('button');
+          b.className = 'chip';
+          b.type = 'button';
+          b.setAttribute('aria-pressed', 'false');
+          b.dataset.key = key;
+          b.innerHTML =
+            '<span class="box" aria-hidden="true">✓</span>' +
+            '<span class="txt"><b>' +
+            f.label +
+            '</b><div class="d">' +
+            f.desc +
+            '</div></span>' +
+            '<span class="sev ' +
+            f.sev +
+            '">' +
+            f.sevText +
+            '</span>';
+          b.addEventListener('click', () => {
+            selected[key] = !selected[key];
+            b.setAttribute('aria-pressed', selected[key] ? 'true' : 'false');
+            say('');
+            render();
+          });
+          chips.appendChild(b);
+        });
+
+        // Group selected fixes' blocks by file (package.json edits combine).
+        function group() {
+          let blocks = [];
+          ORDER.forEach((k) => {
+            if (selected[k]) blocks = blocks.concat(FIX[k].blocks);
+          });
+          const byFile = [];
+          blocks.forEach((blk) => {
+            const ex = byFile.find((x) => x.file === blk.file && x.op === blk.op);
+            if (ex) ex.lines = ex.lines.concat(blk.lines.filter((l) => l.t !== 'hunk'));
+            else byFile.push({ file: blk.file, op: blk.op, lines: blk.lines.slice() });
+          });
+          return byFile;
+        }
+
+        function render() {
+          const byFile = group();
+          if (byFile.length === 0) {
+            diffEl.innerHTML =
+              '<div class="pg-empty">Select a fix above to preview its diff.</div>';
+            statEl.textContent = '0 files changed';
+            return;
+          }
+          let html = '',
+            add = 0,
+            del = 0;
+          byFile.forEach((f) => {
+            const opHtml =
+              f.op === 'new'
+                ? '<span class="op new">new file</span> '
+                : f.op === 'del'
+                  ? '<span class="op del">deleted</span> '
+                  : '';
+            html += '<div class="file">' + opHtml + esc(f.file) + '</div>';
+            f.lines.forEach((l) => {
+              if (l.t === 'hunk') {
+                html += '<span class="hunk">' + esc(l.x) + '</span>';
+                return;
+              }
+              if (l.t === 'add') add++;
+              if (l.t === 'del') del++;
+              html += '<span class="ln ' + l.t + '">' + esc(l.x) + '</span>';
+            });
+          });
+          diffEl.innerHTML = html;
+          statEl.innerHTML =
+            byFile.length +
+            ' file' +
+            (byFile.length > 1 ? 's' : '') +
+            ' changed &nbsp; <span class="p">+' +
+            add +
+            '</span> &nbsp; <span class="m">−' +
+            del +
+            '</span>';
+        }
+
+        // A git-apply-shaped patch built from the current selection (for Copy patch).
+        function buildPatch() {
+          const byFile = group();
+          if (byFile.length === 0) return '';
+          return byFile
+            .map((f) => {
+              const head =
+                f.op === 'new'
+                  ? '--- /dev/null\n+++ b/' + f.file
+                  : f.op === 'del'
+                    ? '--- a/' + f.file + '\n+++ /dev/null'
+                    : '--- a/' + f.file + '\n+++ b/' + f.file;
+              const body = f.lines
+                .map((l) =>
+                  l.t === 'hunk' ? l.x : (l.t === 'add' ? '+' : l.t === 'del' ? '-' : ' ') + l.x,
+                )
+                .join('\n');
+              return head + '\n' + body;
+            })
+            .join('\n');
+        }
+
+        const results = document.getElementById('tryResults');
+        const scan = document.getElementById('tryScan');
+        const scanText = document.getElementById('tryScanText');
+        const repo = document.getElementById('tryRepo');
+
+        function analyze() {
+          results.classList.remove('show');
+          scan.hidden = false;
+          say('');
+          const name = repo.value.trim() || 'acme/storefront';
+          const steps = [
+            'Cloning ' + name + ' (read-only)…',
+            'Reading package.json + configs…',
+            'Checking the npm advisory DB…',
+            'Building the diff…',
+          ];
+          let i = 0;
+          scanText.textContent = steps[0];
+          const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const iv = setInterval(
+            () => {
+              i++;
+              if (i < steps.length) {
+                scanText.textContent = steps[i];
+                return;
+              }
+              clearInterval(iv);
+              scan.hidden = true;
+              // Land the demo with the security fix preselected so a diff is on screen.
+              ORDER.forEach((k) => delete selected[k]);
+              selected.security = true;
+              [].forEach.call(chips.children, (c) => {
+                c.setAttribute('aria-pressed', selected[c.dataset.key] ? 'true' : 'false');
+              });
+              render();
+              results.classList.add('show');
+            },
+            reduce ? 120 : 460,
+          );
+        }
+        document.getElementById('tryAnalyze').addEventListener('click', analyze);
+        repo.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') analyze();
+        });
+        [].forEach.call(document.querySelectorAll('.pg-examples button'), (b) => {
+          b.addEventListener('click', () => {
+            repo.value = b.dataset.ex;
+            analyze();
+          });
+        });
+
+        const copyBtn = document.getElementById('tryCopy');
+        copyBtn.addEventListener('click', async () => {
+          const patch = buildPatch();
+          if (!patch) {
+            say('Select a fix first.');
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(patch + '\n');
+            copyBtn.textContent = 'Copied';
+            setTimeout(() => (copyBtn.textContent = 'Copy patch'), 1600);
+            say('Patch copied — git apply it anywhere.');
+          } catch {
+            say('Clipboard unavailable — the patch is shown above.');
+          }
+        });
+        document.getElementById('tryPr').addEventListener('click', () => {
+          say(
+            'The hosted PR flow is coming. Today: npx @apostel/visual-config try ' +
+              (repo.value.trim() || '<owner/repo>') +
+              '.',
+          );
         });
       })();
 
