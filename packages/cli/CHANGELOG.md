@@ -1,5 +1,24 @@
 # @apostel/visual-config
 
+## 0.7.0
+
+### Minor Changes
+
+- [#21](https://github.com/Sam-Apostel/project-config-tools/pull/21) [`d5824f8`](https://github.com/Sam-Apostel/project-config-tools/commit/d5824f8d050c522adefc7ed1351a4628d8e00925) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - Add monorepo / workspace support. Project detection now resolves member packages
+  from `pnpm-workspace.yaml` or the npm/yarn `workspaces` field (globs and
+  `!`-exclusions), exposing them as `ProjectModel.workspacePackages`. The daemon
+  gains `getWorkspace` and `setActivePackage` RPCs that re-open the engine at any
+  member, and the UI adds a package switcher so every view and operation targets
+  the selected package.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @apostel/visual-config-core@0.7.0
+  - @apostel/visual-config-mcp@0.7.0
+  - @apostel/visual-config-server@0.7.0
+  - @apostel/visual-config-ui@0.7.0
+
 ## 0.6.0
 
 ### Minor Changes
