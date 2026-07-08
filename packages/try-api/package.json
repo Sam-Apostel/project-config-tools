@@ -1,0 +1,26 @@
+{
+  "name": "@apostel/visual-config-try-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Stateless hosted service behind the marketing playground: clone a public repo (read-only), run the real engine, return findings + a diff as JSON. Never executes the target repo.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sam-Apostel/project-config-tools.git",
+    "directory": "packages/try-api"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "visual-config-try-api": "./src/bin.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/bin.js"
+  },
+  "dependencies": {
+    "@apostel/visual-config-core": "workspace:*"
+  }
+}
