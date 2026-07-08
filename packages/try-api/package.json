@@ -18,9 +18,13 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/bin.js"
+    "bundle": "esbuild src/bin.ts --bundle --platform=node --target=node22 --format=cjs --external:@babel/parser --external:jsonc-parser --external:diff --external:semver --outfile=dist/server.cjs",
+    "start": "node dist/server.cjs"
   },
   "dependencies": {
     "@apostel/visual-config-core": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5"
   }
 }

@@ -61,10 +61,13 @@ diagnostics needs. Nothing is written to the target repo — the output is a dif
 ## Run it locally
 
 ```bash
-pnpm --filter @apostel/visual-config-try-api build
-PORT=8080 node packages/try-api/dist/bin.js
-# or, no build step:
+# dev, no build step (tsx runs the TypeScript directly):
 pnpm --filter @apostel/visual-config-try-api exec tsx src/bin.ts
+
+# or build the self-contained bundle (core inlined) and run that — this is what
+# the container runs:
+pnpm --filter @apostel/visual-config-try-api bundle
+PORT=8080 node packages/try-api/dist/server.cjs
 
 curl "http://127.0.0.1:8080/api/try?repo=sindresorhus/slugify"
 ```
