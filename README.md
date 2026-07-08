@@ -56,6 +56,9 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
   `workspaces` field; a **package switcher** points every view and operation at any member
 - 🟢 **Run scripts** as buttons with streamed output and a **Stop** control
 - 🟢 The **Diff Sheet** — every mutation previewed and confirmed, with **undo**
+- 🟢 **Headless `check`** — `visual-config check` runs the diagnostics with no UI, prints a
+  summary (or `--json`) and exits non-zero per `--fail-on` (vulnerabilities by default): a
+  drop-in CI gate
 - 🟢 **MCP server** (`visual-config mcp`) exposing every operation as an agent tool, plus
   read-only resources and an **in-session app UI** (MCP Apps / SEP-1865); `init-mcp`
   registers it for teammates and cloud agents
@@ -65,8 +68,8 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
 Everything writes through a **format- and comment-preserving** layer; files stay the only
 source of truth. Published under `@apostel/*` via an automated OIDC pipeline.
 
-🟡 **Not yet:** cross-workspace version alignment, guided framework-config _editing_,
-a headless `check` mode, and IDE panels — see the [roadmap](docs/ROADMAP.md).
+🟡 **Not yet:** cross-workspace version alignment, cross-repo fan-out, guided
+framework-config _editing_, and IDE panels — see the [roadmap](docs/ROADMAP.md).
 
 ---
 

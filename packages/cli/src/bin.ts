@@ -16,15 +16,19 @@ interface CliArgs {
   open: boolean;
   plugins: boolean;
   client?: string;
+  json: boolean;
+  failOn?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { open: true, plugins: true };
+  const args: CliArgs = { open: true, plugins: true, json: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (!arg) continue;
     if (arg === '--no-open') args.open = false;
     else if (arg === '--no-plugins') args.plugins = false;
+    else if (arg === '--json') args.json = true;
+    else if (arg === '--fail-on') args.failOn = argv[++i];
     else if (arg === '--cwd') args.cwd = argv[++i];
     else if (arg === '--host') args.host = argv[++i];
     else if (arg === '--port') args.port = Number(argv[++i]);
@@ -90,6 +94,21 @@ async function main(): Promise<void> {
     const { tryRemote } = await import('./try-remote.js');
     await tryRemote(args.target);
     return;
+  }
+
+  if (args.command === 'check') {
+    // Headless CI gate: diagnostics → summary/JSON → exit code. Reads only.
+    const root = resolve(args.cwd ?? process.cwd());
+    const { runCheck, parseFailOn } = await import('./check.js');
+    let failOn;
+    try {
+      failOn = parseFailOn(args.failOn ?? 'vuln');
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
+      process.exit(2);
+    }
+    const code = await runCheck(root, { json: args.json, failOn });
+    process.exit(code);
   }
 
   if (args.command === 'mcp') {

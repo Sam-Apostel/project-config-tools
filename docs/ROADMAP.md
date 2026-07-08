@@ -53,8 +53,11 @@ typecheck + CI):
   (example: `@apostel/visual-config-opinion-ts-strict`).
 - ✅ **Release pipeline** — Changesets + GitHub Actions publishing under `@apostel/*`
   via **OIDC Trusted Publishing** (no token), with per-package GitHub Releases.
-- 🔜 Not yet: cross-workspace version alignment, guided framework-config _editing_
-  (AST rewrite), a headless **`check`** mode, IDE extensions, and the **hosted
+- ✅ **Headless `check`** — `visual-config check` runs diagnostics with no UI,
+  prints a summary or `--json`, and exits non-zero per `--fail-on` (vuln by
+  default) — a drop-in CI gate.
+- 🔜 Not yet: cross-workspace version alignment, cross-**repo** fan-out, guided
+  framework-config _editing_ (AST rewrite), IDE extensions, and the **hosted
   "point at any repo → PR"** flow (the diff playground is live).
 
 ---
