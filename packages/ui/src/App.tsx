@@ -8,6 +8,7 @@ import type {
   JournalEntry,
   ProjectModel,
   ScriptEntry,
+  VulnFix,
 } from '@apostel/visual-config-core';
 import type {
   BumpAnalysis,
@@ -98,6 +99,7 @@ export function App(): JSX.Element {
   const [deprecations, setDeprecations] = useState<DeprecationMap>(new Map());
   const [changelogs, setChangelogs] = useState<ChangelogMap>(new Map());
   const [sizes, setSizes] = useState<SizeMap>(new Map());
+  const [vulnFixes, setVulnFixes] = useState<VulnFix[]>([]);
   const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
   const [configs, setConfigs] = useState<ConfigView[]>([]);
   const [scaffolds, setScaffolds] = useState<ScaffoldStatus[]>([]);
@@ -150,6 +152,12 @@ export function App(): JSX.Element {
             if (!closed) setSizes(new Map(s.packages.map((p) => [p.name, p.bytes])));
           })
           .catch(() => undefined);
+        connection
+          .getRemediation()
+          .then((r) => {
+            if (!closed) setVulnFixes(r.fixes);
+          })
+          .catch(() => undefined);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
     return () => {
@@ -168,6 +176,10 @@ export function App(): JSX.Element {
     connection
       .getInstallSizes()
       .then((s) => setSizes(new Map(s.packages.map((p) => [p.name, p.bytes]))))
+      .catch(() => undefined);
+    connection
+      .getRemediation()
+      .then((r) => setVulnFixes(r.fixes))
       .catch(() => undefined);
   }, []);
 
@@ -189,6 +201,7 @@ export function App(): JSX.Element {
         setChangelogs(new Map());
         setBumps(new Map());
         setSizes(new Map());
+        setVulnFixes([]);
         setSection('overview');
         setJournal(await connection.listJournal());
         setTsconfig(await connection.getTsconfig());
@@ -207,6 +220,10 @@ export function App(): JSX.Element {
         connection
           .getInstallSizes()
           .then((s) => setSizes(new Map(s.packages.map((p) => [p.name, p.bytes]))))
+          .catch(() => undefined);
+        connection
+          .getRemediation()
+          .then((r) => setVulnFixes(r.fixes))
           .catch(() => undefined);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -347,6 +364,17 @@ export function App(): JSX.Element {
     const result = await connection.planOperation('upgrade-dependencies', { upgrades });
     if (result.ok && result.change) setPending(result.change);
     else setError(result.error ?? 'Could not plan the upgrade.');
+  }, []);
+
+  const planFixVulns = useCallback(async (fixes: VulnFix[]) => {
+    const connection = rpcRef.current;
+    if (!connection || fixes.length === 0) return;
+    setError(null);
+    const result = await connection.planOperation('fix-vulnerabilities', {
+      fixes: fixes.map((f) => ({ name: f.name, to: f.to })),
+    });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the fix.');
   }, []);
 
   const runScript = useCallback(async (name: string) => {
@@ -502,6 +530,8 @@ export function App(): JSX.Element {
             changelogs={changelogs}
             bumps={bumps}
             sizes={sizes}
+            vulnFixes={vulnFixes}
+            onFixVulns={() => planFixVulns(vulnFixes)}
             onAnalyze={analyzeBump}
             onChangelog={loadChangelog}
             onUpgrade={(name, latest, dev) => planInstall(name, `^${latest}`, dev)}
@@ -752,6 +782,8 @@ function Dependencies(props: {
   changelogs: ChangelogMap;
   bumps: Map<string, BumpAnalysis | 'loading'>;
   sizes: SizeMap;
+  vulnFixes: VulnFix[];
+  onFixVulns: () => void;
   onAnalyze: (name: string) => void;
   onChangelog: (name: string) => void;
   onUpgrade: (name: string, latest: string, dev: boolean) => void;
@@ -761,6 +793,7 @@ function Dependencies(props: {
   const outdatedCount = props.deps.filter((d) => props.outdated.has(d.name)).length;
   const vulnCount = props.deps.filter((d) => props.vulns.has(d.name)).length;
   const totalBytes = [...props.sizes.values()].reduce((a, b) => a + b, 0);
+  const hasMajorFix = props.vulnFixes.some((f) => f.major);
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -773,6 +806,19 @@ function Dependencies(props: {
           </span>
         )}
         {vulnCount > 0 && <span className="badge risk-breaking">{vulnCount} vulnerable</span>}
+        {props.vulnFixes.length > 0 && (
+          <button
+            className="btn primary small"
+            onClick={props.onFixVulns}
+            title={
+              hasMajorFix
+                ? 'Some fixes cross a major version — review the diff'
+                : 'Bump vulnerable dependencies to safe versions'
+            }
+          >
+            Fix vulnerabilities ({props.vulnFixes.length}){hasMajorFix ? ' ⚠' : ''}
+          </button>
+        )}
         {outdatedCount > 0 && (
           <button className="btn primary small" onClick={props.onUpgradeAll}>
             Upgrade all ({outdatedCount})

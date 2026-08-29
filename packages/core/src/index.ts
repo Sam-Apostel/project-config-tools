@@ -12,6 +12,7 @@ import { setConfigValueOperation } from './operations/set-config-value.js';
 import { removeConfigValueOperation } from './operations/remove-config-value.js';
 import { addConfigOperation } from './operations/add-config.js';
 import { switchToBiomeOperation } from './operations/switch-to-biome.js';
+import { fixVulnerabilitiesOperation } from './operations/fix-vulnerabilities.js';
 import { homedir } from 'node:os';
 import { join as joinPath, resolve as resolvePath } from 'node:path';
 import { NodeFileSystem } from './fs.js';
@@ -63,6 +64,17 @@ export {
   type ScaffoldInfo,
 } from './operations/add-config.js';
 export { switchToBiomeOperation, type SwitchToBiomeInput } from './operations/switch-to-biome.js';
+export {
+  fixVulnerabilitiesOperation,
+  type FixVulnerabilitiesInput,
+} from './operations/fix-vulnerabilities.js';
+export {
+  computeRemediation,
+  pickSafeVersion,
+  type Remediation,
+  type VulnFix,
+  type VulnAdvisory,
+} from './remediate.js';
 export {
   configSchema,
   knownJsonConfig,
@@ -157,6 +169,7 @@ export const builtinOperations: Operation<unknown>[] = [
   removeConfigValueOperation as Operation<unknown>,
   addConfigOperation as Operation<unknown>,
   switchToBiomeOperation as Operation<unknown>,
+  fixVulnerabilitiesOperation as Operation<unknown>,
 ];
 
 /**

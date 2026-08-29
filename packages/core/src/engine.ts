@@ -18,6 +18,7 @@ import { NpmRegistry, type Registry } from './registry/npm.js';
 import { searchCatalog, type CatalogQuery, type CatalogResult } from './catalog.js';
 import { computeDiagnostics, type Diagnostics } from './diagnostics.js';
 import { computeInstallSizes, type InstallSizes } from './project/sizes.js';
+import { computeRemediation, type Remediation } from './remediate.js';
 import { configSchema, type ConfigView } from './config/schema.js';
 import { extractJsConfig } from './config/js-extract.js';
 import { scaffoldCatalog, type ScaffoldInfo } from './operations/add-config.js';
@@ -169,6 +170,11 @@ export class Engine {
   /** Per-dependency install-size footprint (unpacked size of each package's own files). */
   getInstallSizes(): Promise<InstallSizes> {
     return computeInstallSizes(this.project, this.npm);
+  }
+
+  /** Safe upgrade targets for vulnerable deps (apply via the fix-vulnerabilities op). */
+  getRemediation(): Promise<Remediation> {
+    return computeRemediation(this.project, this.npm);
   }
 
   /**

@@ -31,7 +31,8 @@ typecheck + CI):
   (GitHub release notes + breaking changes) and **code-aware bump-safety analysis**
   (breaking changes cross-referenced against the app's real usage). Diagnostics are
   **lockfile-exact** — the installed version from `pnpm-lock`/`package-lock`/`yarn.lock`,
-  not the range floor — plus a per-package **install-size** footprint.
+  not the range floor — plus a per-package **install-size** footprint and one-click
+  **vulnerability remediation** (minimal safe bump per advisory, majors flagged).
 - ✅ **Config adapters** — view/edit **Biome / Prettier / ESLint / oxlint / tsconfig**
   as guided forms with curated factual docs; **read-only static views** of JS/TS
   configs (`next.config`, `vite.config`, eslint flat) via `@babel/parser`.

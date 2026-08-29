@@ -39,6 +39,8 @@ export interface Registry {
    * from the registry), or undefined if unknown. `version` defaults to `latest`.
    */
   unpackedSize?(name: string, version?: string): Promise<number | undefined>;
+  /** Every published version of a package, in registry order. Optional. */
+  versions?(name: string): Promise<string[]>;
 }
 
 interface RawSearchResponse {
@@ -110,6 +112,14 @@ export class NpmRegistry implements Registry {
     const manifest = await this.manifest(name, version);
     const size = manifest?.dist?.unpackedSize;
     return typeof size === 'number' && size >= 0 ? size : undefined;
+  }
+
+  async versions(name: string): Promise<string[]> {
+    const res = await this.fetchImpl(`${this.baseUrl}/${name}`);
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`Registry lookup failed for ${name}: ${res.status}`);
+    const doc = (await res.json()) as { versions?: Record<string, unknown> };
+    return Object.keys(doc.versions ?? {});
   }
 
   private async latestManifest(
