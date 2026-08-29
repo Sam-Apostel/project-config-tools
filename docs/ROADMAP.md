@@ -42,9 +42,13 @@ typecheck + CI):
 - ✅ **Setup & swaps** — `add-config` scaffolds a tool (Prettier/Biome/oxlint) in one
   reviewed step; **`switch-to-biome`** replaces ESLint + Prettier as a single
   reversible Change (deletes configs, prunes deps, swaps scripts).
+- ✅ **Toolchain presets** — `apply-preset` composes a curated baseline
+  (`strict-ts`, `biome`, `ts-biome`) — tsconfig strictness + config files +
+  scripts + installs — into one reviewed, reversible Change. Idempotent: existing
+  files and scripts are kept, so re-applying only fills what's missing.
 - ✅ Operations: add/remove script, install/remove/upgrade dependency,
   set-tsconfig-option, set-package-field, set/remove-config-value, add-config,
-  switch-to-biome, add-mcp-config.
+  switch-to-biome, fix-vulnerabilities, apply-preset, add-mcp-config.
 - ✅ **MCP server** — every operation as a `plan_*` tool, plus `get_project`,
   `get_diagnostics`, `get_changelog`, `get_config`, `analyze_bump`, `apply_change`,
   `undo`; read-only resources; and an **in-session app UI** (MCP Apps / SEP-1865).

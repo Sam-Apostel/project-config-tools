@@ -401,3 +401,89 @@ describe('fix-vulnerabilities', () => {
     ).rejects.toThrow(/none of the packages/);
   });
 });
+
+describe('apply-preset', () => {
+  it('applies the ts-biome bundle: tsconfig + configs + scripts + install', async () => {
+    const { engine, fs, runner } = await makeEngine({
+      'package.json': pkg({ name: 'demo' }),
+      'tsconfig.json': '{\n  "compilerOptions": {\n    "target": "ES2022"\n  }\n}\n',
+    });
+    const change = await engine.plan('apply-preset', { preset: 'ts-biome' });
+    expect(change.summary).toMatch(/Strict TypeScript \+ Biome/);
+    expect(change.edits.map((e) => e.path).sort()).toEqual([
+      '.editorconfig',
+      'biome.json',
+      'package.json',
+      'tsconfig.json',
+    ]);
+    expect(change.commands[0]!.argv).toEqual(['npm', 'install', '-D', '@biomejs/biome']);
+
+    await engine.apply(change.id);
+    const ts = await fs.readFile('/proj/tsconfig.json');
+    expect(ts).toContain('"strict": true');
+    expect(ts).toContain('"noUncheckedIndexedAccess": true');
+    expect(ts).toContain('"target": "ES2022"'); // preserved
+    expect(await fs.readFile('/proj/biome.json')).toBe('{}\n');
+    expect(await fs.readFile('/proj/.editorconfig')).toContain('root = true');
+    const parsed = JSON.parse(await fs.readFile('/proj/package.json'));
+    expect(parsed.scripts.check).toBe('biome check .');
+    expect(runner.calls).toEqual([['npm', 'install', '-D', '@biomejs/biome']]);
+  });
+
+  it('is idempotent: keeps existing files, scripts, and installed deps', async () => {
+    const { engine, fs, runner } = await makeEngine({
+      'package.json': pkg({
+        name: 'demo',
+        devDependencies: { '@biomejs/biome': '^1.9.0' },
+        scripts: { format: 'my custom format' },
+      }),
+      'biome.json': '{ "linter": { "enabled": true } }\n',
+    });
+    const change = await engine.plan('apply-preset', { preset: 'biome' });
+    // biome.json is kept (not in edits); @biomejs/biome already installed (no command).
+    expect(change.edits.map((e) => e.path)).not.toContain('biome.json');
+    expect(change.commands).toEqual([]);
+    expect(change.notes.some((n) => n.message.includes('biome.json'))).toBe(true);
+    expect(change.notes.some((n) => n.message.includes('"format" script'))).toBe(true);
+
+    await engine.apply(change.id);
+    expect(await fs.readFile('/proj/biome.json')).toBe('{ "linter": { "enabled": true } }\n');
+    const parsed = JSON.parse(await fs.readFile('/proj/package.json'));
+    expect(parsed.scripts.format).toBe('my custom format'); // not clobbered
+    expect(parsed.scripts.check).toBe('biome check .'); // added
+    expect(runner.calls).toEqual([]);
+  });
+
+  it('warns and skips the tsconfig facet when there is no tsconfig.json', async () => {
+    const { engine, fs } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    const change = await engine.plan('apply-preset', { preset: 'strict-ts' });
+    expect(change.edits.map((e) => e.path)).toEqual(['.editorconfig']);
+    expect(change.notes.some((n) => n.message.includes('no tsconfig.json'))).toBe(true);
+    await engine.apply(change.id);
+    expect(await fs.readFile('/proj/.editorconfig')).toContain('indent_size = 2');
+  });
+
+  it('throws when the preset is already fully applied', async () => {
+    const { engine } = await makeEngine({
+      'package.json': pkg({
+        name: 'demo',
+        devDependencies: { '@biomejs/biome': '^1.9.0' },
+        scripts: { format: 'biome format --write .', lint: 'biome lint .', check: 'biome check .' },
+      }),
+      'biome.json': '{}\n',
+      '.editorconfig': 'root = true\n',
+    });
+    await expect(engine.plan('apply-preset', { preset: 'biome' })).rejects.toThrow(/already fully/);
+  });
+
+  it('engine.getPresets flags applicability', async () => {
+    const { engine } = await makeEngine({ 'package.json': pkg({ name: 'demo' }) });
+    const presets = engine.getPresets();
+    const strictTs = presets.find((p) => p.id === 'strict-ts')!;
+    // No tsconfig.json → strict-ts (tsconfig-only) is not applicable.
+    expect(strictTs.applicable).toBe(false);
+    expect(strictTs.reason).toMatch(/tsconfig/);
+    // biome installs a package → applicable regardless.
+    expect(presets.find((p) => p.id === 'biome')!.applicable).toBe(true);
+  });
+});

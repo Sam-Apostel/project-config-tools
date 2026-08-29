@@ -53,6 +53,9 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
   `vite.config`, eslint flat) via static extraction
 - 🟢 **Set up a tool** in one step (scaffold Prettier / Biome / oxlint), and a one-click
   **Switch to Biome** that replaces ESLint + Prettier — both fully reversible
+- 🟢 **Toolchain presets** — curated baselines (`strict-ts`, `biome`, `ts-biome`) that apply a
+  whole bundle (tsconfig strictness, config files, scripts, installs) as one reviewed,
+  reversible change; **idempotent**, so your existing files and scripts are kept, not clobbered
 - 🟢 **Monorepo aware** — reads members from `pnpm-workspace.yaml` or the npm/yarn
   `workspaces` field; a **package switcher** points every view and operation at any member
 - 🟢 **Run scripts** as buttons with streamed output and a **Stop** control

@@ -14,6 +14,7 @@ import type {
   BumpAnalysis,
   ConfigOptionDoc,
   ConfigView,
+  PresetStatus,
   ReleaseNotes,
   ScaffoldStatus,
   TsconfigView,
@@ -103,6 +104,7 @@ export function App(): JSX.Element {
   const [tsconfig, setTsconfig] = useState<TsconfigView | null>(null);
   const [configs, setConfigs] = useState<ConfigView[]>([]);
   const [scaffolds, setScaffolds] = useState<ScaffoldStatus[]>([]);
+  const [presets, setPresets] = useState<PresetStatus[]>([]);
   const [improvements, setImprovements] = useState<Improvement[]>([]);
   const [bumps, setBumps] = useState<Map<string, BumpAnalysis | 'loading'>>(new Map());
   const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null);
@@ -133,6 +135,7 @@ export function App(): JSX.Element {
         setTsconfig(await connection.getTsconfig());
         setConfigs(await connection.getConfigs());
         setScaffolds(await connection.getScaffolds());
+        setPresets(await connection.getPresets());
         setImprovements(await connection.getImprovements());
         setWorkspace(await connection.getWorkspace());
         // Diagnostics + sizes hit the network; load them without blocking the UI.
@@ -172,6 +175,7 @@ export function App(): JSX.Element {
     setTsconfig(await connection.getTsconfig());
     setConfigs(await connection.getConfigs());
     setScaffolds(await connection.getScaffolds());
+    setPresets(await connection.getPresets());
     setImprovements(await connection.getImprovements());
     connection
       .getInstallSizes()
@@ -207,6 +211,7 @@ export function App(): JSX.Element {
         setTsconfig(await connection.getTsconfig());
         setConfigs(await connection.getConfigs());
         setScaffolds(await connection.getScaffolds());
+        setPresets(await connection.getPresets());
         setImprovements(await connection.getImprovements());
         connection
           .getDiagnostics()
@@ -289,6 +294,15 @@ export function App(): JSX.Element {
     const result = await connection.planOperation('switch-to-biome', {});
     if (result.ok && result.change) setPending(result.change);
     else setError(result.error ?? 'Could not plan the switch.');
+  }, []);
+
+  const planApplyPreset = useCallback(async (preset: string) => {
+    const connection = rpcRef.current;
+    if (!connection) return;
+    setError(null);
+    const result = await connection.planOperation('apply-preset', { preset });
+    if (result.ok && result.change) setPending(result.change);
+    else setError(result.error ?? 'Could not plan the preset.');
   }, []);
 
   const planInstall = useCallback(async (name: string, range: string, dev: boolean) => {
@@ -559,10 +573,12 @@ export function App(): JSX.Element {
           <ConfigSection
             configs={configs}
             scaffolds={scaffolds}
+            presets={presets}
             onSet={planSetConfig}
             onRemove={planRemoveConfig}
             onAdd={planAddConfig}
             onSwitchToBiome={planSwitchToBiome}
+            onApplyPreset={planApplyPreset}
           />
         )}
         {section === 'scripts' && (
@@ -1313,10 +1329,12 @@ function ConfigCard(props: {
 function ConfigSection(props: {
   configs: ConfigView[];
   scaffolds: ScaffoldStatus[];
+  presets: PresetStatus[];
   onSet: (path: string, key: string, value: unknown) => void;
   onRemove: (path: string, key: string) => void;
   onAdd: (tool: string) => void;
   onSwitchToBiome: () => void;
+  onApplyPreset: (preset: string) => void;
 }): JSX.Element {
   const missing = props.scaffolds.filter((s) => !s.present);
   const hasEslintOrPrettier = props.configs.some((c) =>
@@ -1376,6 +1394,38 @@ function ConfigSection(props: {
                 </div>
                 <button className="btn small primary" onClick={() => props.onAdd(s.tool)}>
                   Set up {s.title}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {props.presets.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>Toolchain presets</h3>
+          <p className="section-sub" style={{ marginTop: 0 }}>
+            Curated baselines you opt into — each applies its whole bundle (tsconfig, configs,
+            scripts, installs) as one reviewed, reversible change. Idempotent: your existing files
+            and scripts are kept.
+          </p>
+          <div className="card">
+            {props.presets.map((p) => (
+              <div className="row" key={p.id}>
+                <div className="grow">
+                  <div className="name">{p.title}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{p.description}</div>
+                  {!p.applicable && p.reason && (
+                    <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>
+                      {p.reason}
+                    </div>
+                  )}
+                </div>
+                <button
+                  className="btn small"
+                  disabled={!p.applicable}
+                  onClick={() => props.onApplyPreset(p.id)}
+                >
+                  Apply
                 </button>
               </div>
             ))}

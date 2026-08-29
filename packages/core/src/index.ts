@@ -13,6 +13,7 @@ import { removeConfigValueOperation } from './operations/remove-config-value.js'
 import { addConfigOperation } from './operations/add-config.js';
 import { switchToBiomeOperation } from './operations/switch-to-biome.js';
 import { fixVulnerabilitiesOperation } from './operations/fix-vulnerabilities.js';
+import { applyPresetOperation } from './operations/apply-preset.js';
 import { homedir } from 'node:os';
 import { join as joinPath, resolve as resolvePath } from 'node:path';
 import { NodeFileSystem } from './fs.js';
@@ -75,6 +76,13 @@ export {
   type VulnFix,
   type VulnAdvisory,
 } from './remediate.js';
+export {
+  applyPresetOperation,
+  presetCatalog,
+  PRESET_IDS,
+  type ApplyPresetInput,
+  type PresetInfo,
+} from './operations/apply-preset.js';
 export {
   configSchema,
   knownJsonConfig,
@@ -170,6 +178,7 @@ export const builtinOperations: Operation<unknown>[] = [
   addConfigOperation as Operation<unknown>,
   switchToBiomeOperation as Operation<unknown>,
   fixVulnerabilitiesOperation as Operation<unknown>,
+  applyPresetOperation as Operation<unknown>,
 ];
 
 /**

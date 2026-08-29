@@ -22,6 +22,7 @@ import { computeRemediation, type Remediation } from './remediate.js';
 import { configSchema, type ConfigView } from './config/schema.js';
 import { extractJsConfig } from './config/js-extract.js';
 import { scaffoldCatalog, type ScaffoldInfo } from './operations/add-config.js';
+import { presetCatalog, type PresetInfo } from './operations/apply-preset.js';
 import { scanUsage } from './migration/usage.js';
 import { analyzeBump } from './migration/analyze.js';
 import { GithubChangelogSource } from './migration/changelog.js';
@@ -269,6 +270,38 @@ export class Engine {
   getScaffolds(): Array<ScaffoldInfo & { present: boolean }> {
     const paths = new Set(this.project.configFiles.map((f) => f.path));
     return scaffoldCatalog().map((s) => ({ ...s, present: paths.has(s.configPath) }));
+  }
+
+  /**
+   * Toolchain presets, each flagged for whether applying it would do anything in
+   * this project (so the UI can disable a preset that's already fully in place).
+   * Cheap: derived from the loaded project model, no file reads.
+   */
+  getPresets(): Array<PresetInfo & { applicable: boolean; reason?: string }> {
+    const configPaths = new Set(this.project.configFiles.map((f) => f.path));
+    const scriptNames = new Set(this.project.scripts.map((s) => s.name));
+    const deps = new Set(this.project.dependencies.map((d) => d.name));
+    const hasTsconfig = configPaths.has('tsconfig.json');
+
+    return presetCatalog().map((p) => {
+      // A tsconfig-only preset can't do its job without a tsconfig.json.
+      const tsconfigOnly =
+        p.touchesTsconfig &&
+        p.installs.length === 0 &&
+        p.scripts.length === 0 &&
+        p.creates.every((f) => f === '.editorconfig');
+      if (tsconfigOnly && !hasTsconfig) {
+        return { ...p, applicable: false, reason: 'Add a tsconfig.json first' };
+      }
+      const hasWork =
+        (p.touchesTsconfig && hasTsconfig) ||
+        p.creates.some((f) => !configPaths.has(f)) ||
+        p.installs.some((pkg) => !deps.has(pkg)) ||
+        p.scripts.some((name) => !scriptNames.has(name));
+      return hasWork
+        ? { ...p, applicable: true }
+        : { ...p, applicable: false, reason: 'Already applied' };
+    });
   }
 
   /** A read view of one config file (parsed/extracted values + documented options). */
