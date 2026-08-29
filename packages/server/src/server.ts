@@ -17,6 +17,7 @@ import type {
 } from '@apostel/visual-config-protocol';
 import { TaskManager } from './tasks.js';
 import { serveStatic } from './static.js';
+import { createFleetService, type FleetServiceDeps } from './fleet.js';
 
 export interface DaemonOptions {
   engine: Engine;
@@ -29,6 +30,8 @@ export interface DaemonOptions {
    * workspace member. Omit to disable workspace switching (single-package mode).
    */
   openAt?: (root: string) => Promise<Engine>;
+  /** Injected filesystem/opener for the cross-repo fleet service (defaults to the real ones). */
+  fleet?: FleetServiceDeps;
 }
 
 export interface Daemon {
@@ -175,6 +178,8 @@ export async function startDaemon(opts: DaemonOptions): Promise<Daemon> {
       getRemediation: () => engine.getRemediation(),
       getWorkspace: async () => workspaceInfo(),
       setActivePackage: (dir) => setActivePackage(dir),
+      // Cross-repo fan-out — its own service, holding this connection's last plan.
+      ...createFleetService(opts.fleet),
     };
 
     const rpc = createBirpc<ClientFunctions, ServerFunctions>(serverFunctions, {
