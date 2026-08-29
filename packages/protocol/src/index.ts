@@ -8,6 +8,10 @@ import type {
   ConfigOptionDoc,
   ConfigView,
   Diagnostics,
+  FleetApplyResult,
+  FleetPlan,
+  FleetState,
+  FleetTarget,
   Improvement,
   InstallSizes,
   JournalEntry,
@@ -25,6 +29,26 @@ export type ScaffoldStatus = ScaffoldInfo & { present: boolean };
 
 /** A toolchain preset plus whether applying it would do anything here. */
 export type PresetStatus = PresetInfo & { applicable: boolean; reason?: string };
+
+/** One subdirectory in the fleet folder-browser. */
+export interface DirEntry {
+  name: string;
+  path: string;
+}
+
+/** A directory's browsable subfolders, for picking a fleet parent folder. */
+export interface DirListing {
+  path: string;
+  /** The parent directory, or undefined at the filesystem root. */
+  parent?: string;
+  entries: DirEntry[];
+}
+
+/** The npm projects a fleet scan turned up under a parent folder. */
+export interface FleetDiscovery {
+  parent: string;
+  projects: FleetTarget[];
+}
 
 /** The workspace (monorepo) shape: its members and which one is active. */
 export interface WorkspaceInfo {
@@ -78,6 +102,27 @@ export interface ServerFunctions {
   getWorkspace(): Promise<WorkspaceInfo>;
   /** Switch the active workspace member; pass '' to return to the root. Returns the new active project. */
   setActivePackage(dir: string): Promise<ProjectModel>;
+
+  // --- Cross-repo fan-out ("fleet") ---
+  /** List the subfolders of a directory, for picking a parent folder to scan. Defaults to the user's home. */
+  fleetBrowse(path?: string): Promise<DirListing>;
+  /** Discover npm projects under a parent folder (+ any pinned ones); remembers the parent. */
+  fleetDiscover(parent: string, depth?: number): Promise<FleetDiscovery>;
+  /** Dry-run one operation across the discovered projects; the plan is held for a following apply. */
+  fleetPlan(
+    parent: string,
+    operationId: string,
+    input: unknown,
+    depth?: number,
+  ): Promise<FleetPlan>;
+  /** Apply the plan from the last fleetPlan on this connection. */
+  fleetApply(): Promise<FleetApplyResult>;
+  /** Pin an npm project the walk can't guess (a monorepo child folder). Returns the new state. */
+  fleetPin(path: string): Promise<FleetState>;
+  /** Remove a pinned project. Returns the new state. */
+  fleetUnpin(path: string): Promise<FleetState>;
+  /** The remembered parents and pinned projects. */
+  fleetGetState(): Promise<FleetState>;
 }
 
 export interface TsconfigView {
@@ -117,5 +162,9 @@ export type {
   ConfigOptionDoc,
   ScaffoldInfo,
   PresetInfo,
+  FleetTarget,
+  FleetPlan,
+  FleetApplyResult,
+  FleetState,
   WorkspacePackage,
 };

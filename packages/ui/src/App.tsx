@@ -14,6 +14,10 @@ import type {
   BumpAnalysis,
   ConfigOptionDoc,
   ConfigView,
+  DirListing,
+  FleetApplyResult,
+  FleetPlan,
+  FleetTarget,
   PresetStatus,
   ReleaseNotes,
   ScaffoldStatus,
@@ -30,6 +34,7 @@ type Section =
   | 'typescript'
   | 'config'
   | 'scripts'
+  | 'fleet'
   | 'history';
 
 interface TaskRun {
@@ -454,6 +459,7 @@ export function App(): JSX.Element {
     typescript: 0,
     config: configs.length,
     scripts: project.scripts.length,
+    fleet: 0,
     history: journal.filter((j) => !j.undone).length,
   };
   const outdatedCount = deps.filter((d) => outdated.has(d.name)).length;
@@ -518,6 +524,11 @@ export function App(): JSX.Element {
           count={counts.scripts}
           active={section === 'scripts'}
           onClick={() => setSection('scripts')}
+        />
+        <RailButton
+          label="Fleet"
+          active={section === 'fleet'}
+          onClick={() => setSection('fleet')}
         />
         <RailButton
           label="History"
@@ -590,6 +601,7 @@ export function App(): JSX.Element {
             onPlanAddScript={planAddScript}
           />
         )}
+        {section === 'fleet' && rpc && <FleetView rpc={rpc} onError={setError} />}
         {section === 'history' && <History journal={journal} onUndo={undo} />}
       </main>
 
@@ -1619,4 +1631,241 @@ function renderDiff(diff: string): JSX.Element[] {
       </span>
     );
   });
+}
+
+function FleetView(props: { rpc: ServerRpc; onError: (msg: string) => void }): JSX.Element {
+  const { rpc, onError } = props;
+  const [listing, setListing] = useState<DirListing | null>(null);
+  const [discovery, setDiscovery] = useState<{ parent: string; projects: FleetTarget[] } | null>(
+    null,
+  );
+  const [pkg, setPkg] = useState('');
+  const [version, setVersion] = useState('');
+  const [plan, setPlan] = useState<FleetPlan | null>(null);
+  const [applied, setApplied] = useState<FleetApplyResult | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const guard = useCallback(
+    async (fn: () => Promise<void>) => {
+      setBusy(true);
+      try {
+        await fn();
+      } catch (err) {
+        onError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [onError],
+  );
+
+  useEffect(() => {
+    void guard(async () => setListing(await rpc.fleetBrowse()));
+  }, [rpc, guard]);
+
+  const browse = (path?: string): void =>
+    void guard(async () => setListing(await rpc.fleetBrowse(path)));
+
+  const scan = (parent: string): void =>
+    void guard(async () => {
+      const result = await rpc.fleetDiscover(parent);
+      setDiscovery(result);
+      setPlan(null);
+      setApplied(null);
+    });
+
+  const preview = (): void =>
+    void guard(async () => {
+      if (!discovery) return;
+      setApplied(null);
+      const next = await rpc.fleetPlan(discovery.parent, 'upgrade-dependencies', {
+        upgrades: [{ name: pkg.trim(), range: `^${version.trim().replace(/^\^/, '')}` }],
+      });
+      setPlan(next);
+    });
+
+  const apply = (): void => void guard(async () => setApplied(await rpc.fleetApply()));
+
+  const pin = (path: string): void =>
+    void guard(async () => {
+      await rpc.fleetPin(path);
+      if (discovery) setDiscovery(await rpc.fleetDiscover(discovery.parent));
+    });
+
+  const canPreview = pkg.trim() !== '' && version.trim() !== '' && !busy;
+
+  return (
+    <>
+      <h2 className="section-title">Fleet — cross-repo fan-out</h2>
+      <p className="section-sub">
+        Point at a folder of repos and apply one change across all of them. Discovery needs no
+        config; a monorepo whose <code>package.json</code> sits in a child folder is found by
+        walking, and anything the walk misses you can pin by hand. Every repo is previewed before
+        anything is written, and each keeps its own undo history.
+      </p>
+
+      {/* Folder browser */}
+      <div className="card">
+        <div className="row">
+          <div className="grow">
+            <div className="name">Browse</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, wordBreak: 'break-all' }}>
+              {listing?.path ?? '…'}
+            </div>
+          </div>
+          {listing?.parent && (
+            <button className="btn small" disabled={busy} onClick={() => browse(listing.parent)}>
+              ↑ Up
+            </button>
+          )}
+          {listing && (
+            <button className="btn small" disabled={busy} onClick={() => pin(listing.path)}>
+              Pin
+            </button>
+          )}
+          {listing && (
+            <button
+              className="btn small primary"
+              disabled={busy}
+              onClick={() => scan(listing.path)}
+            >
+              Scan this folder
+            </button>
+          )}
+        </div>
+        {listing && listing.entries.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+            {listing.entries.map((e) => (
+              <button
+                key={e.path}
+                className="btn small"
+                disabled={busy}
+                onClick={() => browse(e.path)}
+              >
+                {e.name}/
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Discovered projects + fan-out form */}
+      {discovery && (
+        <div style={{ marginTop: 24 }}>
+          <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>
+            {discovery.projects.length} project(s) under {discovery.parent}
+          </h3>
+          {discovery.projects.length === 0 ? (
+            <div className="empty">No npm projects here — try another folder or pin one.</div>
+          ) : (
+            <div className="card">
+              {discovery.projects.map((p) => (
+                <div className="row" key={p.root}>
+                  <div className="grow">
+                    <div className="name">{p.name ?? '(unnamed)'}</div>
+                    <div
+                      style={{ color: 'var(--text-muted)', fontSize: 12, wordBreak: 'break-all' }}
+                    >
+                      {p.root}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {discovery.projects.length > 0 && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div className="name" style={{ marginBottom: 8 }}>
+                Upgrade a dependency everywhere
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  placeholder="package (e.g. @acme/ui-lib)"
+                  value={pkg}
+                  onChange={(e) => setPkg(e.target.value)}
+                  style={{ flex: '1 1 220px' }}
+                />
+                <input
+                  placeholder="version (e.g. 2.4.0)"
+                  value={version}
+                  onChange={(e) => setVersion(e.target.value)}
+                  style={{ flex: '0 1 160px' }}
+                />
+                <button className="btn small primary" disabled={!canPreview} onClick={preview}>
+                  Preview
+                </button>
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 6 }}>
+                Fans an <code>upgrade-dependencies</code> across every repo that has the package;
+                repos without it are skipped.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Plan preview */}
+      {plan && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <h3 style={{ fontSize: 15, margin: 0 }}>
+              Plan — {plan.planned} to change, {plan.skipped} skipped
+            </h3>
+            {plan.planned > 0 && !applied && (
+              <button className="btn small primary" disabled={busy} onClick={apply}>
+                Apply to {plan.planned} repo(s)
+              </button>
+            )}
+          </div>
+          <div className="card" style={{ marginTop: 8 }}>
+            {plan.entries.map((e) => (
+              <div
+                key={e.root}
+                style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}
+              >
+                <div className="row">
+                  <div className="grow">
+                    <div className="name">
+                      {e.status === 'planned' ? '✓ ' : '– '}
+                      {e.name ?? e.root}
+                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                      {e.status === 'planned' ? e.change?.summary : e.reason}
+                    </div>
+                  </div>
+                  {applied && (
+                    <div style={{ fontSize: 12 }}>
+                      {applied.entries.find((a) => a.root === e.root)?.ok
+                        ? '✓ applied'
+                        : e.status === 'planned'
+                          ? '—'
+                          : ''}
+                    </div>
+                  )}
+                </div>
+                {e.status === 'planned' && e.change?.edits[0] && (
+                  <details style={{ marginTop: 4 }}>
+                    <summary
+                      style={{ cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}
+                    >
+                      diff
+                    </summary>
+                    <pre className="diff">{renderDiff(e.change.edits[0].diff)}</pre>
+                  </details>
+                )}
+              </div>
+            ))}
+          </div>
+          {applied && (
+            <div style={{ marginTop: 8, fontSize: 13 }}>
+              Applied {applied.applied} change(s)
+              {applied.failed > 0 ? `, ${applied.failed} failed` : ''}. Each repo has its own undo
+              entry.
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
 }

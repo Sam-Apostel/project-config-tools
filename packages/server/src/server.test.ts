@@ -6,7 +6,10 @@ import {
   InMemoryFileSystem,
   OperationRegistry,
   addScriptOperation,
+  upgradeDependenciesOperation,
+  removeDependencyOperation,
   type CommandRunner,
+  type FleetOpener,
   type RunResult,
 } from '@apostel/visual-config-core';
 import type { ClientFunctions, ServerFunctions } from '@apostel/visual-config-protocol';
@@ -161,5 +164,84 @@ describe('daemon over birpc/ws', () => {
     // call must reject rather than silently switching to a non-existent member.
     await expect(rpc.setActivePackage('packages/nope')).rejects.toBeTruthy();
     expect((await rpc.getWorkspace()).active).toBe('');
+  });
+});
+
+function fleetRegistry(): OperationRegistry {
+  const registry = new OperationRegistry();
+  registry.register(upgradeDependenciesOperation);
+  registry.register(removeDependencyOperation);
+  return registry;
+}
+
+/** A daemon whose fleet service scans an injected in-memory fs of sibling repos. */
+async function makeFleetDaemon(
+  files: Record<string, object>,
+): Promise<{ d: Daemon; fs: InMemoryFileSystem }> {
+  const fs = new InMemoryFileSystem(
+    Object.fromEntries(
+      Object.entries(files).map(([path, obj]) => [path, JSON.stringify(obj, null, 2) + '\n']),
+    ),
+  );
+  const open: FleetOpener = (root) =>
+    Engine.create({ root, fs, registry: fleetRegistry(), runner: new NoopRunner() });
+  const engine = await open('/proj');
+  const d = await startDaemon({ engine, fleet: { fs, open } });
+  return { d, fs };
+}
+
+describe('daemon fleet (cross-repo fan-out)', () => {
+  const REPOS = {
+    '/proj/package.json': { name: 'host' },
+    '/work/app-a/package.json': { name: 'app-a', dependencies: { '@acme/ui-lib': '^1.0.0' } },
+    '/work/app-b/package.json': { name: 'app-b', dependencies: { zod: '^3.0.0' } },
+  };
+
+  it('discovers projects under a parent folder', async () => {
+    const { d } = await makeFleetDaemon(REPOS);
+    daemon = d;
+    const rpc = await connectClient(daemon);
+    const { parent, projects } = await rpc.fleetDiscover('/work');
+    expect(parent).toBe('/work');
+    expect(projects.map((p) => p.name).sort()).toEqual(['app-a', 'app-b']);
+  });
+
+  it('plans across repos (skipping ones without the dependency), then applies only those planned', async () => {
+    const { d, fs } = await makeFleetDaemon(REPOS);
+    daemon = d;
+    const rpc = await connectClient(daemon);
+
+    const plan = await rpc.fleetPlan('/work', 'upgrade-dependencies', {
+      upgrades: [{ name: '@acme/ui-lib', range: '^2.0.0' }],
+    });
+    expect(plan.planned).toBe(1);
+    expect(plan.skipped).toBe(1);
+    expect(plan.entries.find((e) => e.status === 'planned')?.name).toBe('app-a');
+
+    const result = await rpc.fleetApply();
+    expect(result.applied).toBe(1);
+    expect(
+      JSON.parse(await fs.readFile('/work/app-a/package.json')).dependencies['@acme/ui-lib'],
+    ).toBe('^2.0.0');
+    expect(JSON.parse(await fs.readFile('/work/app-b/package.json')).dependencies.zod).toBe(
+      '^3.0.0',
+    );
+  });
+
+  it('rejects fleetApply with no prior plan', async () => {
+    const { d } = await makeFleetDaemon(REPOS);
+    daemon = d;
+    const rpc = await connectClient(daemon);
+    await expect(rpc.fleetApply()).rejects.toBeTruthy();
+  });
+
+  it('pins a valid project and rejects a path with no package.json', async () => {
+    const { d } = await makeFleetDaemon(REPOS);
+    daemon = d;
+    const rpc = await connectClient(daemon);
+    await expect(rpc.fleetPin('/work/nope')).rejects.toBeTruthy();
+    const state = await rpc.fleetPin('/work/app-a');
+    expect(state.pinned).toContain('/work/app-a');
+    expect((await rpc.fleetGetState()).pinned).toContain('/work/app-a');
   });
 });
