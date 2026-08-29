@@ -59,7 +59,7 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
 - 🟢 **Monorepo aware** — reads members from `pnpm-workspace.yaml` or the npm/yarn
   `workspaces` field; a **package switcher** points every view and operation at any member
 - 🟢 **Cross-repo fan-out** — in the browser (a **Fleet** view) or headless (`visual-config fleet
-  <folder>`). Because it runs on your machine it can open _many_ repos at once: point at a parent
+<folder>`). Because it runs on your machine it can open _many_ repos at once: point at a parent
   folder, it **discovers** the npm projects under it (no config; monorepo child-folder manifests
   found by walking, others pinnable by hand), then **plans one operation across all of them** —
   e.g. bump a shared package everywhere. Dry-run first with per-repo diffs, apply on confirm; each
