@@ -12,6 +12,7 @@ import type {
   InstallSizes,
   JournalEntry,
   OperationInfo,
+  PresetInfo,
   ProjectModel,
   ReleaseNotes,
   Remediation,
@@ -21,6 +22,9 @@ import type {
 
 /** A scaffoldable tool plus whether it's already set up in this project. */
 export type ScaffoldStatus = ScaffoldInfo & { present: boolean };
+
+/** A toolchain preset plus whether applying it would do anything here. */
+export type PresetStatus = PresetInfo & { applicable: boolean; reason?: string };
 
 /** The workspace (monorepo) shape: its members and which one is active. */
 export interface WorkspaceInfo {
@@ -64,6 +68,8 @@ export interface ServerFunctions {
   getConfigs(): Promise<ConfigView[]>;
   getConfig(path: string): Promise<ConfigView | undefined>;
   getScaffolds(): Promise<ScaffoldStatus[]>;
+  /** Toolchain presets (curated baselines), each flagged for whether it applies here. */
+  getPresets(): Promise<PresetStatus[]>;
   /** Per-dependency install-size footprint (unpacked size of each package's own files). */
   getInstallSizes(): Promise<InstallSizes>;
   /** Safe upgrade targets for vulnerable dependencies (apply via fix-vulnerabilities). */
@@ -110,5 +116,6 @@ export type {
   ConfigKindSchema,
   ConfigOptionDoc,
   ScaffoldInfo,
+  PresetInfo,
   WorkspacePackage,
 };
