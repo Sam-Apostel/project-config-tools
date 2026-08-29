@@ -61,9 +61,17 @@ typecheck + CI):
 - ✅ **Headless `check`** — `visual-config check` runs diagnostics with no UI,
   prints a summary or `--json`, and exits non-zero per `--fail-on` (vuln by
   default) — a drop-in CI gate.
-- 🔜 Not yet: cross-workspace version alignment, cross-**repo** fan-out, guided
-  framework-config _editing_ (AST rewrite), IDE extensions, and the **hosted
-  "point at any repo → PR"** flow (the diff playground is live).
+- ✅ **Cross-repo fan-out (core + CLI)** — `visual-config fleet <folder>`
+  discovers the npm projects under a parent folder (no config; monorepo
+  child-folder manifests found by walking, others pinnable), then fans one
+  operation across all of them as **N per-repo Changes** — dry-run first, apply
+  on `--apply`, each repo keeping its own undo journal; repos where the op
+  doesn't apply are skipped, not errored. State (scanned parents + manual pins)
+  lives in the user's config dir, never in a scanned repo. _(UI + MCP surfaces
+  are the next slices.)_
+- 🔜 Not yet: a UI/MCP surface for fan-out, cross-workspace version alignment,
+  guided framework-config _editing_ (AST rewrite), IDE extensions, and the
+  **hosted "point at any repo → PR"** flow (the diff playground is live).
 
 ---
 
