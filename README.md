@@ -58,6 +58,12 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
   reversible change; **idempotent**, so your existing files and scripts are kept, not clobbered
 - 🟢 **Monorepo aware** — reads members from `pnpm-workspace.yaml` or the npm/yarn
   `workspaces` field; a **package switcher** points every view and operation at any member
+- 🟢 **Cross-repo fan-out** (`visual-config fleet <folder>`) — because it runs on your machine
+  it can open _many_ repos at once: point at a parent folder, it **discovers** the npm projects
+  under it (no config; monorepo child-folder manifests found by walking, others pinnable by
+  hand), then **plans one operation across all of them** — e.g. bump a shared package
+  everywhere. Dry-run first, per-repo diffs, apply only on `--apply`; each repo keeps its own
+  undo journal. Repos where the change doesn't apply are skipped, not errored
 - 🟢 **Run scripts** as buttons with streamed output and a **Stop** control
 - 🟢 The **Diff Sheet** — every mutation previewed and confirmed, with **undo**
 - 🟢 **Headless `check`** — `visual-config check` runs the diagnostics with no UI, prints a
@@ -72,8 +78,9 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
 Everything writes through a **format- and comment-preserving** layer; files stay the only
 source of truth. Published under `@apostel/*` via an automated OIDC pipeline.
 
-🟡 **Not yet:** cross-workspace version alignment, cross-repo fan-out, guided
-framework-config _editing_, and IDE panels — see the [roadmap](docs/ROADMAP.md).
+🟡 **Not yet:** a UI for cross-repo fan-out (the headless core + CLI ship today),
+cross-workspace version alignment, guided framework-config _editing_, and IDE panels
+— see the [roadmap](docs/ROADMAP.md).
 
 ---
 

@@ -14,6 +14,7 @@ import { addConfigOperation } from './operations/add-config.js';
 import { switchToBiomeOperation } from './operations/switch-to-biome.js';
 import { fixVulnerabilitiesOperation } from './operations/fix-vulnerabilities.js';
 import { applyPresetOperation } from './operations/apply-preset.js';
+import { Fleet, type FleetTarget, type FleetOpener } from './multi/fleet.js';
 import { homedir } from 'node:os';
 import { join as joinPath, resolve as resolvePath } from 'node:path';
 import { NodeFileSystem } from './fs.js';
@@ -83,6 +84,30 @@ export {
   type ApplyPresetInput,
   type PresetInfo,
 } from './operations/apply-preset.js';
+export {
+  discoverProjects,
+  type DiscoveredProject,
+  type DiscoverOptions,
+} from './multi/discover.js';
+export {
+  emptyFleetState,
+  fleetStatePath,
+  loadFleetState,
+  saveFleetState,
+  rememberParent,
+  pinProject,
+  unpinProject,
+  type FleetState,
+} from './multi/state.js';
+export {
+  Fleet,
+  type FleetTarget,
+  type FleetOpener,
+  type FleetPlan,
+  type FleetPlanEntry,
+  type FleetApplyResult,
+  type FleetApplyEntry,
+} from './multi/fleet.js';
 export {
   configSchema,
   knownJsonConfig,
@@ -230,4 +255,17 @@ export function openProject(root: string, options: OpenProjectOptions = {}): Pro
       options.journalPath === null ? undefined : (options.journalPath ?? defaultJournalPath(root)),
   };
   return Engine.create(deps);
+}
+
+/**
+ * Convenience: a {@link Fleet} over many roots, each opened via {@link openProject}
+ * (so every repo gets its own per-root journal). Pass a custom `open` to control
+ * per-repo plugin discovery.
+ */
+export function createFleet(
+  targets: FleetTarget[],
+  options: OpenProjectOptions = {},
+  open: FleetOpener = (root) => openProject(root, options),
+): Fleet {
+  return new Fleet(targets, open);
 }

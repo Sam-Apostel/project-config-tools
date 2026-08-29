@@ -18,10 +18,15 @@ interface CliArgs {
   client?: string;
   json: boolean;
   failOn?: string;
+  depth?: number;
+  op?: string;
+  input?: string;
+  apply: boolean;
+  pin?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { open: true, plugins: true, json: false };
+  const args: CliArgs = { open: true, plugins: true, json: false, apply: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (!arg) continue;
@@ -34,6 +39,11 @@ function parseArgs(argv: string[]): CliArgs {
     else if (arg === '--port') args.port = Number(argv[++i]);
     else if (arg === '--ui-dir') args.uiDir = argv[++i];
     else if (arg === '--client') args.client = argv[++i];
+    else if (arg === '--depth') args.depth = Number(argv[++i]);
+    else if (arg === '--op') args.op = argv[++i];
+    else if (arg === '--input') args.input = argv[++i];
+    else if (arg === '--apply') args.apply = true;
+    else if (arg === '--pin') args.pin = argv[++i];
     else if (!arg.startsWith('-') && !args.command) args.command = arg;
     else if (!arg.startsWith('-') && !args.target) args.target = arg;
   }
@@ -108,6 +118,31 @@ async function main(): Promise<void> {
       process.exit(2);
     }
     const code = await runCheck(root, { json: args.json, failOn });
+    process.exit(code);
+  }
+
+  if (args.command === 'fleet') {
+    // Cross-repo fan-out: discover npm projects under a folder and (optionally)
+    // plan/apply one operation across them. Dry-run unless --apply.
+    if (args.pin) {
+      const { pinFleetProject } = await import('./fleet.js');
+      process.exit(await pinFleetProject(args.pin));
+    }
+    if (!args.target) {
+      console.error(
+        'Usage: visual-config fleet <parent-folder> [--depth N] [--op <id> --input <json> [--apply]]',
+      );
+      console.error('       visual-config fleet <parent-folder> --pin <path-to-npm-project>');
+      process.exit(1);
+    }
+    const { runFleet } = await import('./fleet.js');
+    const code = await runFleet(args.target, {
+      depth: args.depth,
+      op: args.op,
+      input: args.input,
+      apply: args.apply,
+      json: args.json,
+    });
     process.exit(code);
   }
 
