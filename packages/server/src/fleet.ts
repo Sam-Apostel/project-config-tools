@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import {
   Fleet,
   NodeFileSystem,
-  discoverProjects,
+  resolveFleetTargets,
   loadFleetState,
   saveFleetState,
   rememberParent,
@@ -13,7 +13,6 @@ import {
   openProject,
   type FileSystem,
   type FleetOpener,
-  type FleetTarget,
   type FleetPlan,
   type FleetApplyResult,
   type FleetState,
@@ -40,17 +39,6 @@ export function createFleetService(deps: FleetServiceDeps = {}) {
   let fleet: Fleet | null = null;
   let plan: FleetPlan | null = null;
 
-  async function targetsFor(parent: string, depth?: number): Promise<FleetTarget[]> {
-    const discovered = await discoverProjects(fs, parent, { depth });
-    const state = await loadFleetState(fs);
-    const seen = new Set(discovered.map((d) => d.root));
-    const pinned: FleetTarget[] = [];
-    for (const root of state.pinned) {
-      if (!seen.has(root) && (await fs.exists(join(root, 'package.json')))) pinned.push({ root });
-    }
-    return [...discovered.map((d) => ({ root: d.root, name: d.name })), ...pinned];
-  }
-
   return {
     // The file browser lists real directories, so it always uses the OS fs
     // (not the injected one) — it's for picking a folder on this machine.
@@ -72,7 +60,7 @@ export function createFleetService(deps: FleetServiceDeps = {}) {
 
     async fleetDiscover(parent: string, depth?: number): Promise<FleetDiscovery> {
       const parentDir = resolve(parent);
-      const projects = await targetsFor(parentDir, depth);
+      const projects = await resolveFleetTargets(fs, parentDir, depth);
       await saveFleetState(fs, rememberParent(await loadFleetState(fs), parentDir));
       return { parent: parentDir, projects };
     },
@@ -83,7 +71,7 @@ export function createFleetService(deps: FleetServiceDeps = {}) {
       input: unknown,
       depth?: number,
     ): Promise<FleetPlan> {
-      const projects = await targetsFor(resolve(parent), depth);
+      const projects = await resolveFleetTargets(fs, resolve(parent), depth);
       fleet = new Fleet(projects, open);
       plan = await fleet.planAcross(operationId, input);
       return plan;

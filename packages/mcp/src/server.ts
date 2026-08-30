@@ -9,20 +9,40 @@ import {
   type ServerCapabilities,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import type { Engine } from '@apostel/visual-config-core';
+import {
+  NodeFileSystem,
+  createFleet,
+  resolveFleetTargets,
+  loadFleetState,
+  saveFleetState,
+  rememberParent,
+  pinProject,
+  type Engine,
+  type FileSystem,
+  type Fleet,
+  type FleetOpener,
+  type FleetPlan,
+} from '@apostel/visual-config-core';
+import { join, resolve } from 'node:path';
 import { APP_HTML, APP_MIME, APP_RESOURCE_URI } from './app-html.js';
 
 function toolName(operationId: string): string {
   return `plan_${operationId.replace(/-/g, '_')}`;
 }
 
+/** Injected filesystem/opener for the cross-repo fleet tools (defaults to the real ones). */
+export interface McpServerDeps {
+  fleet?: { fs?: FileSystem; open?: FleetOpener };
+}
+
 /**
  * Build an MCP server that projects the engine's operations as tools. Each
  * operation becomes a `plan_*` tool whose inputSchema IS the operation's schema;
  * calling it returns a previewable Change. `apply_change` is the gated writer,
- * mirroring the human Diff Sheet's plan → confirm split (spec 05).
+ * mirroring the human Diff Sheet's plan → confirm split (spec 05). Cross-repo
+ * fan-out is exposed as fleet_* tools.
  */
-export function createMcpServer(engine: Engine): Server {
+export function createMcpServer(engine: Engine, deps: McpServerDeps = {}): Server {
   // Advertise the MCP Apps extension (SEP-1865) alongside tools/resources so
   // hosts that support interactive UIs know we ship an `text/html;profile=mcp-app`.
   const capabilities = {
@@ -32,6 +52,13 @@ export function createMcpServer(engine: Engine): Server {
   } as unknown as ServerCapabilities;
 
   const server = new Server({ name: 'visual-config', version: '0.0.0' }, { capabilities });
+
+  // Cross-repo fan-out state, held for this stdio session so fleet_apply writes
+  // exactly what the preceding fleet_plan previewed (like the daemon per-connection).
+  const fleetFs = deps.fleet?.fs ?? new NodeFileSystem();
+  const fleetOpen = deps.fleet?.open;
+  let fleet: Fleet | null = null;
+  let fleetPlan: FleetPlan | null = null;
 
   const planTools = engine.listOperations().map((op) => ({
     name: toolName(op.id),
@@ -131,6 +158,59 @@ export function createMcpServer(engine: Engine): Server {
         properties: {
           path: { type: 'string', description: 'A config file path; omit to list all.' },
         },
+      },
+    },
+    {
+      name: 'fleet_discover',
+      description:
+        'Cross-repo fan-out: discover the npm projects under a parent folder on this machine. No config needed — a monorepo whose package.json sits in a child folder is found by walking; pinned projects are included. Read-only.',
+      inputSchema: {
+        type: 'object',
+        required: ['parent'],
+        additionalProperties: false,
+        properties: {
+          parent: { type: 'string', description: 'Absolute path to the folder of repos.' },
+          depth: { type: 'number', description: 'Directory levels to search (default 3).' },
+        },
+      },
+    },
+    {
+      name: 'fleet_plan',
+      description:
+        'Dry-run ONE operation across every project under a parent folder — e.g. bump a shared dependency everywhere. Returns a previewable Change per repo; repos where it does not apply are skipped, not errored. Does NOT write — call fleet_apply to write the previewed plan.',
+      inputSchema: {
+        type: 'object',
+        required: ['parent', 'operationId'],
+        additionalProperties: false,
+        properties: {
+          parent: { type: 'string', description: 'Absolute path to the folder of repos.' },
+          operationId: {
+            type: 'string',
+            description: 'An operation id, e.g. upgrade-dependencies (see list_operations).',
+          },
+          input: {
+            type: 'object',
+            description: "The operation's input — the same shape as its plan_* tool.",
+          },
+          depth: { type: 'number', description: 'Directory levels to search (default 3).' },
+        },
+      },
+    },
+    {
+      name: 'fleet_apply',
+      description:
+        'Apply the plan from the most recent fleet_plan in this session. Writes each planned repo; each repo keeps its own undo journal. This writes files.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    {
+      name: 'fleet_pin',
+      description:
+        'Pin an npm project the folder walk cannot guess (e.g. a monorepo child folder) so future fleet_discover includes it.',
+      inputSchema: {
+        type: 'object',
+        required: ['path'],
+        additionalProperties: false,
+        properties: { path: { type: 'string', description: 'Absolute path to the npm project.' } },
       },
     },
   ];
@@ -246,6 +326,37 @@ export function createMcpServer(engine: Engine): Server {
           null,
           2,
         );
+      case 'fleet_discover': {
+        const parent = resolve(String(args.parent));
+        const depth = args.depth === undefined ? undefined : Number(args.depth);
+        const projects = await resolveFleetTargets(fleetFs, parent, depth);
+        await saveFleetState(fleetFs, rememberParent(await loadFleetState(fleetFs), parent));
+        return JSON.stringify({ parent, projects }, null, 2);
+      }
+      case 'fleet_plan': {
+        const parent = resolve(String(args.parent));
+        const depth = args.depth === undefined ? undefined : Number(args.depth);
+        const projects = await resolveFleetTargets(fleetFs, parent, depth);
+        fleet = createFleet(projects, {}, fleetOpen);
+        fleetPlan = await fleet.planAcross(String(args.operationId), args.input ?? {});
+        return JSON.stringify(fleetPlan, null, 2);
+      }
+      case 'fleet_apply': {
+        if (!fleet || !fleetPlan)
+          throw new Error('No fleet plan to apply — call fleet_plan first.');
+        const result = await fleet.applyAcross(fleetPlan);
+        fleetPlan = null; // consumed
+        return JSON.stringify(result, null, 2);
+      }
+      case 'fleet_pin': {
+        const root = resolve(String(args.path));
+        if (!(await fleetFs.exists(join(root, 'package.json')))) {
+          throw new Error(`No package.json at ${root} — nothing to pin.`);
+        }
+        const state = pinProject(await loadFleetState(fleetFs), root);
+        await saveFleetState(fleetFs, state);
+        return JSON.stringify(state, null, 2);
+      }
       default: {
         const operationId = toolToOperation.get(name);
         if (!operationId) throw new Error(`Unknown tool: ${name}`);

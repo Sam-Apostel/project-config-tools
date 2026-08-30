@@ -108,6 +108,7 @@ export {
   type FleetApplyResult,
   type FleetApplyEntry,
 } from './multi/fleet.js';
+export { resolveFleetTargets } from './multi/targets.js';
 export {
   configSchema,
   knownJsonConfig,
