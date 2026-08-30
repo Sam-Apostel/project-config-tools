@@ -74,14 +74,21 @@ curl "http://127.0.0.1:8080/api/try?repo=sindresorhus/slugify"
 
 Environment:
 
-| var            | default   | meaning                                                          |
-| -------------- | --------- | ---------------------------------------------------------------- |
-| `PORT`         | `8080`    | listen port                                                      |
-| `HOST`         | `0.0.0.0` | listen address                                                   |
-| `ALLOW_ORIGIN` | `*`       | CORS allow-list; comma-separated origins (e.g. your site's URL). |
+| var                  | default   | meaning                                                                     |
+| -------------------- | --------- | --------------------------------------------------------------------------- |
+| `PORT`               | `8080`    | listen port                                                                 |
+| `HOST`               | `0.0.0.0` | listen address                                                              |
+| `ALLOW_ORIGIN`       | `*`       | CORS allow-list; comma-separated origins (e.g. your site's URL).            |
+| `TRUSTED_PROXIES`    | `1`       | reverse-proxy hops in front (Railway's edge = 1). See rate limiting below.  |
+| `RATE_LIMIT`         | `20`      | requests per client IP per window                                           |
+| `RATE_WINDOW_MS`     | `60000`   | rate-limit window                                                           |
+| `MAX_CONCURRENT`     | `4`       | scans (git clones) running at once                                          |
+| `MAX_QUEUE`          | `20`      | requests allowed to wait for a scan slot before the server sheds with `503` |
+| `CACHE_TTL_MS`       | `300000`  | per-repo result cache lifetime                                              |
+| `MAX_RESPONSE_BYTES` | `1000000` | cap on a scan result; larger answers `413`                                  |
 
-The server also enforces per-IP rate limiting (20 req/min), a concurrency cap (4 clones at a
-time), and a 5-minute per-repo cache — see `TryServerOptions` if you embed `createTryServer`.
+See `TryServerOptions` if you embed `createTryServer` directly. The hardening these knobs
+drive is described under **Security & operations** below.
 
 ## Hosting
 
@@ -108,18 +115,51 @@ executed), plus memory/CPU/PID caps to bound a hostile or huge repo.
   then `fly deploy`. Scale to a shared-cpu-1x/512MB; add `[[http_service.concurrency]]` limits.
 - **Railway** — new service → Deploy from repo → set the Dockerfile path to
   `packages/try-api/Dockerfile` and the build context to the repo root; add the `ALLOW_ORIGIN`
-  variable. Railway injects `PORT`, which the server already honors.
+  variable and keep `TRUSTED_PROXIES=1` (Railway's edge is one hop, so the rate limiter reads the
+  real client IP). Railway injects `PORT`, which the server already honors. `railway.json` carries
+  the health check and restart policy.
 - **Google Cloud Run** — `gcloud run deploy vc-try-api --source .` with the Dockerfile at that
   path; set `--max-instances`, `--concurrency 8`, `--memory 512Mi`, `--cpu 1`, and the
   `ALLOW_ORIGIN` env var. Cloud Run's per-request timeout doubles as a scan timeout.
 - **Render** — a Docker web service pointed at this Dockerfile, health check path `/health`.
 
-### Put a CDN / WAF in front
+## Security & operations
 
-The built-in limiter is a backstop, not a front door. In production, terminate at Cloudflare (or
-your platform's edge): cache `GET /api/try` responses (they send `Cache-Control: max-age=300`),
-add edge rate-limiting per IP, and optionally restrict egress so the container can only reach
-`github.com` and `registry.npmjs.org`.
+This is a public endpoint that clones arbitrary repos, so the hardening lives **in the app** —
+Railway (and most container hosts) have no edge WAF to lean on, so the controls below are the
+enforcement point, not a backstop.
+
+**Abuse & DoS controls** (all env-tunable, see the table above):
+
+- **Spoof-resistant rate limiting.** Per-IP fixed window, keyed off the _real_ client IP. Behind
+  a proxy the server reads `X-Forwarded-For` from the **right** (`TRUSTED_PROXIES` hops in), so a
+  client can't prepend a fake IP to get a fresh bucket. **Set `TRUSTED_PROXIES` to the number of
+  proxies actually in front** — `1` behind Railway's edge; `0` if the container is exposed
+  directly (then the socket address is used and any `X-Forwarded-For` is ignored). Setting it too
+  high lets clients spoof; too low lumps everyone behind the proxy into one bucket.
+- **Bounded work + load shedding.** At most `MAX_CONCURRENT` clones run at once; up to `MAX_QUEUE`
+  more may wait; beyond that the server answers `503 Retry-After` instead of growing an unbounded
+  queue in memory.
+- **Response cap.** A scan result over `MAX_RESPONSE_BYTES` answers `413` rather than streaming a
+  huge payload.
+- **Caching.** Repeat pastes of the same repo are served from a `CACHE_TTL_MS` cache (`X-Cache: HIT`).
+
+**Response hardening.** Every response carries `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: no-referrer`, and `X-Frame-Options: DENY`; CORS is restricted with `ALLOW_ORIGIN`.
+
+**Egress model.** The only outbound traffic is a `git clone` from **github.com** and the
+**registry.npmjs.org** reads diagnostics needs — and that's enforced in code, not by network
+policy: `parseRepo` only ever builds a canonical `https://github.com/<owner>/<repo>.git`, and the
+scan is read-only (no plugins, no commands, target code never runs). Railway can't firewall egress
+the way an edge WAF can, so **the code is the egress boundary** — keep `parseRepo`'s canonicalization
+and the read-only scan (`openProject(dir, { plugins: [], journalPath: null })`) intact when editing.
+
+**Observability.** Each request logs one JSON line to stdout (`ip`, `method`, `path`, `status`,
+`ms`, `repo`, `cache`) — visible in `railway logs`, so a spike from one IP or repo is easy to spot.
+
+**Deploy config.** `railway.json` sets the `/health` check and an `ON_FAILURE` restart policy;
+the Dockerfile's read-only root + `noexec` tmpfs + memory/CPU/PID caps (see **Hosting** above)
+bound a hostile or huge repo at the container level.
 
 ## Wiring the homepage to it
 
