@@ -1,5 +1,115 @@
 # @apostel/visual-config
 
+## 0.9.0
+
+### Minor Changes
+
+- [#36](https://github.com/Sam-Apostel/project-config-tools/pull/36) [`9759571`](https://github.com/Sam-Apostel/project-config-tools/commit/9759571204878edd4a76d8cfee1a46e333344239) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - Cross-repo fan-out — the headless "fleet" core plus a `fleet` CLI command.
+
+  Because visual-config runs on your machine, it can open many repos at once and
+  apply one operation across all of them. New in core:
+
+  - **`discoverProjects(fs, parent, { depth })`** — config-free discovery of the npm
+    projects under a folder. Walks the parent (default depth 3), returns the
+    top-most `package.json` in each subtree (so monorepo members don't double-count)
+    and finds a manifest that lives in a child folder — the monorepo shape where the
+    repo root has no `package.json`.
+  - **Fleet state** (`loadFleetState`/`saveFleetState`/`rememberParent`/`pinProject`)
+    — remembers scanned parents and hand-pinned projects in the user's config dir
+    (honoring `XDG_CONFIG_HOME`). It is user-global app state, never a file dropped
+    into a scanned repo.
+  - **`Fleet`** (+ `createFleet`) — `planAcross` dry-runs an operation in every repo
+    and returns a Change per repo (repos where it doesn't apply are `skipped`, not
+    errored); `applyAcross` writes only the planned ones. Each repo is its own
+    engine, so each keeps its own undo journal.
+
+  New CLI: **`visual-config fleet <folder>`** lists discovered projects; add
+  `--op <id> --input <json>` to preview a fan-out and `--apply` to write it;
+  `--pin <path>` pins a project the walk can't guess. Dry-run by default.
+
+  UI and MCP surfaces for fan-out are the next slices.
+
+- [#34](https://github.com/Sam-Apostel/project-config-tools/pull/34) [`92109b5`](https://github.com/Sam-Apostel/project-config-tools/commit/92109b57feafeff86c573fe0742960777ae7463f) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - One-click vulnerability remediation.
+
+  `engine.getRemediation()` (and a `getRemediation` daemon RPC) turns advisory
+  findings into concrete upgrade targets: for each vulnerable direct dependency it
+  picks the **minimal safe version** that escapes every advisory affecting it,
+  flags when that crosses a major, and reports anything with no safe published
+  version as `unfixable`. A new `fix-vulnerabilities` operation applies the bumps
+  as one reviewed, reversible package.json Change (and appears as an MCP
+  `plan_fix-vulnerabilities` tool). The UI Dependencies view gains a **Fix
+  vulnerabilities** button. Adds `registry.versions()`.
+
+- [#37](https://github.com/Sam-Apostel/project-config-tools/pull/37) [`d241fb2`](https://github.com/Sam-Apostel/project-config-tools/commit/d241fb299d853fb8ec8871ba3eb61792bd3e4711) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - Cross-repo fan-out in the browser — daemon RPCs + a Fleet view.
+
+  Wires the fleet core (discovery, plan-across/apply-across, per-repo journals)
+  into the daemon and the SPA:
+
+  - **Daemon RPCs** (`fleetBrowse`, `fleetDiscover`, `fleetPlan`, `fleetApply`,
+    `fleetPin`/`fleetUnpin`, `fleetGetState`). `fleetPlan` holds the plan per
+    connection so a following `fleetApply` writes exactly what was previewed — the
+    same plan → present → apply-on-confirm contract as the single-repo flow. The
+    service takes an injectable filesystem/opener so it's testable headless.
+  - **Fleet view** in the UI: a folder browser to pick a parent, the discovered
+    (and pinned) projects, and an "upgrade a dependency everywhere" action that
+    previews a per-repo diff for every repo that has the package (others skipped)
+    before applying across all of them.
+
+  Tested: daemon fleet RPCs over the in-memory harness, plus end-to-end over a live
+  daemon against on-disk repos and a browser smoke of the Fleet view. MCP fan-out
+  tools are the next slice.
+
+- [#38](https://github.com/Sam-Apostel/project-config-tools/pull/38) [`8a1b025`](https://github.com/Sam-Apostel/project-config-tools/commit/8a1b025ce28eb8857873f4b7846fbbcb43692983) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - Cross-repo fan-out for agents — `fleet_*` MCP tools.
+
+  The MCP server gains four tools so an agent can drive fan-out the same way the
+  CLI and browser do: `fleet_discover` (npm projects under a parent folder),
+  `fleet_plan` (dry-run one operation across them — repos where it doesn't apply
+  are skipped, not errored), `fleet_apply` (write the plan `fleet_plan` previewed
+  in this session), and `fleet_pin` (pin a monorepo child folder the walk can't
+  guess). `createMcpServer` takes an injectable filesystem/opener so the tools are
+  testable headless.
+
+  Also extracts a shared `resolveFleetTargets(fs, parent, depth?)` in core — the
+  discovered projects plus any pinned ones — used by both the daemon and the MCP
+  server, so all three faces compute the fan-out target set identically.
+
+  This completes cross-repo fan-out across every face — CLI, browser, and MCP.
+
+- [#32](https://github.com/Sam-Apostel/project-config-tools/pull/32) [`7d0a9be`](https://github.com/Sam-Apostel/project-config-tools/commit/7d0a9be23e5fb47f5adf28f9c6994f985d9ad50a) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - Add a headless `check` command for CI.
+
+  `visual-config check` opens the project, computes fact-based diagnostics
+  (outdated / vulnerable / deprecated), prints a summary — or `--json` for a
+  machine-readable report — and exits non-zero when the policy is violated.
+  `--fail-on` selects which kinds gate the build (`vuln` by default; also
+  `deprecation`, `outdated`, `any`, `none`, comma-separated). Read-only: it never
+  runs the project's code, so it's safe to drop into any pipeline.
+
+- [#35](https://github.com/Sam-Apostel/project-config-tools/pull/35) [`d1370db`](https://github.com/Sam-Apostel/project-config-tools/commit/d1370db13afb1819700ffda40ac678380cc2aab4) Thanks [@Sam-Apostel](https://github.com/Sam-Apostel)! - Toolchain presets — curated baselines applied as one change.
+
+  A new `apply-preset` operation composes several mechanical setup facets —
+  tsconfig strictness, config files, package.json scripts, and installs — into a
+  single previewed, reversible `Change`. It ships three presets: `strict-ts` (the
+  strict compiler-option family + `.editorconfig`), `biome` (install Biome +
+  `biome.json` + `.editorconfig` + format/lint/check scripts), and `ts-biome` (the
+  full baseline). Being a built-in operation it also appears as an MCP
+  `plan_apply-preset` tool.
+
+  Presets are the opt-in place for taste: unlike base diagnostics (facts only), a
+  preset is a baseline the user explicitly selects and reviews before applying.
+  Applying one is **idempotent** — existing files and scripts are kept rather than
+  clobbered, already-set tsconfig options and installed packages are no-ops, so
+  re-applying only fills what's missing. `engine.getPresets()` (and a `getPresets`
+  daemon RPC) flags whether each preset would do anything here; the UI Config view
+  gains a **Toolchain presets** section.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @apostel/visual-config-core@0.9.0
+  - @apostel/visual-config-mcp@0.9.0
+  - @apostel/visual-config-server@0.9.0
+  - @apostel/visual-config-ui@0.9.0
+
 ## 0.8.0
 
 ### Minor Changes
