@@ -1,5 +1,13 @@
 # @apostel/visual-config-server
 
+## 0.9.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @apostel/visual-config-core@0.9.0
+  - @apostel/visual-config-protocol@0.9.0
+
 ## 0.8.0
 
 ### Patch Changes
