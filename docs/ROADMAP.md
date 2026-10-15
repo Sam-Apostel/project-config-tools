@@ -53,6 +53,14 @@ typecheck + CI):
   `get_diagnostics`, `get_changelog`, `get_config`, `analyze_bump`, `apply_change`,
   `undo`; read-only resources; and an **in-session app UI** (MCP Apps / SEP-1865).
   `init-mcp` registers the server in `.mcp.json`/`.cursor`/`.vscode` for discovery.
+- ✅ **Guided config editing (MCP sampling)** — a `propose_config_edit` tool
+  turns a plain-language intent into concrete edits by asking the host's own
+  model via **MCP sampling** (no API key, no server-side LLM). The model only
+  proposes option/value inputs; they're validated against the config's documented
+  options and routed through the normal `set-config-value` **plan → preview →
+  apply-on-confirm** flow — nothing is written without a confirmed Change.
+  (Covers the known JSON configs; guided _JS/TS_ config editing via AST rewrite
+  is still ahead.)
 - ✅ **Plugin system + opinions** — built-ins load as a plugin; third parties add
   operations/detectors; attributed opinion packs contribute recommendations
   (example: `@apostel/visual-config-opinion-ts-strict`).

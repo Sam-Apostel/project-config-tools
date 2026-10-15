@@ -49,6 +49,20 @@ function textOf(result: unknown): string {
   return String((result as { content: { text?: string }[] }).content[0]?.text ?? '');
 }
 
+/** Connect a client against a server built over the given files, with optional deps. */
+async function connectWith(files: Record<string, string>, deps?: McpServerDeps): Promise<Client> {
+  const fs = new InMemoryFileSystem({
+    '/proj/package.json': JSON.stringify({ name: 'demo' }, null, 2) + '\n',
+    ...Object.fromEntries(Object.entries(files).map(([p, v]) => [`/proj/${p}`, v])),
+  });
+  const engine = await Engine.create({ root: '/proj', fs, registry: createDefaultRegistry() });
+  const server = createMcpServer(engine, deps);
+  const [clientT, serverT] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: 'test', version: '0' });
+  await Promise.all([server.connect(serverT), client.connect(clientT)]);
+  return client;
+}
+
 describe('MCP Apps (SEP-1865) wiring', () => {
   it('exposes open_config_ui with a ui:// resourceUri in _meta', async () => {
     const client = await connect();
@@ -137,6 +151,70 @@ describe('MCP cross-repo fan-out tools', () => {
   it('fleet_apply without a prior plan reports an error', async () => {
     const { client } = await connectFleet(REPOS);
     const res = await client.callTool({ name: 'fleet_apply', arguments: {} });
+    expect((res as { isError?: boolean }).isError).toBe(true);
+    await client.close();
+  });
+});
+
+describe('MCP guided config editing (propose_config_edit, sampling)', () => {
+  it('turns an intent into a previewable set-config-value Change via sampling', async () => {
+    const sample = async () => ({ text: '{"edits":[{"key":"singleQuote","value":true}]}' });
+    const client = await connectWith({ '.prettierrc': '{}\n' }, { sample });
+
+    const out = JSON.parse(
+      textOf(
+        await client.callTool({
+          name: 'propose_config_edit',
+          arguments: { path: '.prettierrc', intent: 'use single quotes' },
+        }),
+      ),
+    );
+    expect(out.changes).toHaveLength(1);
+    expect(out.changes[0].operationId).toBe('set-config-value');
+    expect(out.changes[0].edits[0].after).toContain('"singleQuote": true');
+    // It did NOT write — the Change is only previewed.
+    await client.close();
+  });
+
+  it('rejects an edit whose value violates the documented option type', async () => {
+    // singleQuote is a boolean; the model wrongly proposes a string.
+    const sample = async () => ({ text: '{"edits":[{"key":"singleQuote","value":"yes"}]}' });
+    const client = await connectWith({ '.prettierrc': '{}\n' }, { sample });
+    const out = JSON.parse(
+      textOf(
+        await client.callTool({
+          name: 'propose_config_edit',
+          arguments: { path: '.prettierrc', intent: 'single quotes' },
+        }),
+      ),
+    );
+    expect(out.changes).toHaveLength(0);
+    expect(out.rejected[0].key).toBe('singleQuote');
+    await client.close();
+  });
+
+  it('declines JS/TS configs (read-only) with a clear message', async () => {
+    const sample = async () => ({ text: '{"edits":[]}' });
+    const client = await connectWith({}, { sample });
+    const out = JSON.parse(
+      textOf(
+        await client.callTool({
+          name: 'propose_config_edit',
+          arguments: { path: 'next.config.js', intent: 'add a CDN domain' },
+        }),
+      ),
+    );
+    expect(out.error).toMatch(/read-only|not an editable JSON config/);
+    await client.close();
+  });
+
+  it('errors when the host does not support sampling', async () => {
+    // No injected sampler and the test client declares no sampling capability.
+    const client = await connectWith({ '.prettierrc': '{}\n' });
+    const res = await client.callTool({
+      name: 'propose_config_edit',
+      arguments: { path: '.prettierrc', intent: 'single quotes' },
+    });
     expect((res as { isError?: boolean }).isError).toBe(true);
     await client.close();
   });
