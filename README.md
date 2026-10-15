@@ -72,7 +72,10 @@ Install-free: `npx @apostel/visual-config` in any JS/TS project.
   drop-in CI gate
 - 🟢 **MCP server** (`visual-config mcp`) exposing every operation as an agent tool, plus
   read-only resources and an **in-session app UI** (MCP Apps / SEP-1865); `init-mcp`
-  registers it for teammates and cloud agents
+  registers it for teammates and cloud agents. Includes **guided config editing** — a
+  `propose_config_edit` tool that uses **MCP sampling** (your own host model, no API key) to turn
+  a plain-language intent into concrete, documented-option-validated edits, each returned as a
+  previewable Change to apply on confirm
 - 🟢 **Plugin system** + **attributed opinion packs** — the neutral base ships only facts;
   taste comes from packs you install (`@apostel/visual-config-kit`)
 

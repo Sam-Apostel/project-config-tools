@@ -17,11 +17,17 @@ import {
   saveFleetState,
   rememberParent,
   pinProject,
+  knownJsonConfig,
+  configSchema,
+  CONFIG_WRITE_SCOPE,
   type Engine,
   type FileSystem,
   type Fleet,
   type FleetOpener,
   type FleetPlan,
+  type ConfigView,
+  type ConfigKindSchema,
+  type JsonValue,
 } from '@apostel/visual-config-core';
 import { join, resolve } from 'node:path';
 import { APP_HTML, APP_MIME, APP_RESOURCE_URI } from './app-html.js';
@@ -30,9 +36,21 @@ function toolName(operationId: string): string {
   return `plan_${operationId.replace(/-/g, '_')}`;
 }
 
+/**
+ * Ask the host's model a single question (MCP sampling). Returns just the text.
+ * Injected in tests; the default calls the connected client's `createMessage`.
+ */
+export type SampleFn = (params: {
+  messages: Array<{ role: 'user' | 'assistant'; content: { type: 'text'; text: string } }>;
+  systemPrompt?: string;
+  maxTokens: number;
+}) => Promise<{ text: string }>;
+
 /** Injected filesystem/opener for the cross-repo fleet tools (defaults to the real ones). */
 export interface McpServerDeps {
   fleet?: { fs?: FileSystem; open?: FleetOpener };
+  /** Sampling implementation for propose_config_edit (defaults to the host via createMessage). */
+  sample?: SampleFn;
 }
 
 /**
@@ -59,6 +77,18 @@ export function createMcpServer(engine: Engine, deps: McpServerDeps = {}): Serve
   const fleetOpen = deps.fleet?.open;
   let fleet: Fleet | null = null;
   let fleetPlan: FleetPlan | null = null;
+
+  // Sampling (for propose_config_edit): use the injected sampler in tests, else
+  // ask the connected host's model via createMessage. Support is only known once
+  // the client has declared its capabilities (after initialize).
+  const sample: SampleFn =
+    deps.sample ??
+    (async (params) => {
+      const res = await server.createMessage(params);
+      return { text: res.content.type === 'text' ? res.content.text : '' };
+    });
+  const samplingSupported = (): boolean =>
+    deps.sample !== undefined || server.getClientCapabilities()?.sampling !== undefined;
 
   const planTools = engine.listOperations().map((op) => ({
     name: toolName(op.id),
@@ -213,6 +243,28 @@ export function createMcpServer(engine: Engine, deps: McpServerDeps = {}): Serve
         properties: { path: { type: 'string', description: 'Absolute path to the npm project.' } },
       },
     },
+    {
+      name: 'propose_config_edit',
+      description:
+        'Guided config editing: given a natural-language intent (e.g. "use single quotes and no semicolons") and a known JSON config file (Biome, Prettier, ESLint, oxlint, tsconfig), ask YOUR model (via MCP sampling) to turn it into concrete option edits, validated against the config\'s documented options, then return a previewable Change per edit. Does NOT write — apply with apply_change after review. JS/TS configs (next.config.js, …) are read-only and not supported here.',
+      inputSchema: {
+        type: 'object',
+        required: ['path', 'intent'],
+        additionalProperties: false,
+        properties: {
+          path: {
+            type: 'string',
+            enum: CONFIG_WRITE_SCOPE,
+            description: 'Which known JSON config file to edit.',
+          },
+          intent: {
+            type: 'string',
+            minLength: 1,
+            description: 'What you want changed, in plain language.',
+          },
+        },
+      },
+    },
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -357,12 +409,94 @@ export function createMcpServer(engine: Engine, deps: McpServerDeps = {}): Serve
         await saveFleetState(fleetFs, state);
         return JSON.stringify(state, null, 2);
       }
+      case 'propose_config_edit':
+        return proposeConfigEdit(String(args.path ?? ''), String(args.intent ?? ''));
       default: {
         const operationId = toolToOperation.get(name);
         if (!operationId) throw new Error(`Unknown tool: ${name}`);
         return JSON.stringify(await engine.plan(operationId, args), null, 2);
       }
     }
+  }
+
+  /**
+   * Guided config editing via sampling: ask the host model to turn a plain-language
+   * intent into concrete option edits, validate them against the config's documented
+   * options (facts, not taste), then plan each as a previewable set-config-value
+   * Change. Never writes — the caller applies with apply_change.
+   */
+  async function proposeConfigEdit(path: string, intent: string): Promise<string> {
+    if (!intent.trim()) throw new Error('propose_config_edit: "intent" is required.');
+    if (!samplingSupported()) {
+      throw new Error(
+        'This MCP host does not support sampling, so propose_config_edit cannot ask your model for a proposal. ' +
+          'Use plan_set_config_value directly with a concrete key and value instead.',
+      );
+    }
+    const known = knownJsonConfig(path);
+    if (!known) {
+      return JSON.stringify(
+        {
+          error: `"${path}" is not an editable JSON config. This tool edits: ${CONFIG_WRITE_SCOPE.join(', ')}. JS/TS configs (next.config.js, vite.config.ts, …) are read-only here — guided AST rewrites aren't supported yet.`,
+        },
+        null,
+        2,
+      );
+    }
+
+    const view = await engine.getConfig(path);
+    const schema = view?.schema ?? configSchema(known.kind);
+    const values = view?.values ?? {};
+
+    const { text } = await sample({
+      systemPrompt: PROPOSE_SYSTEM,
+      maxTokens: 800,
+      messages: [
+        {
+          role: 'user',
+          content: { type: 'text', text: proposalPrompt(path, intent, values, schema) },
+        },
+      ],
+    });
+
+    const edits = parseProposalEdits(text);
+    if (edits.length === 0) {
+      return JSON.stringify(
+        {
+          path,
+          intent,
+          error: 'The model did not return any concrete edit for that intent.',
+          raw: text,
+        },
+        null,
+        2,
+      );
+    }
+
+    const changes = [];
+    const rejected: Array<{ key: string; reason: string }> = [];
+    for (const e of edits) {
+      const problem = validateEdit(e, schema);
+      if (problem) {
+        rejected.push({ key: e.key, reason: problem });
+        continue;
+      }
+      changes.push(await engine.plan('set-config-value', { path, key: e.key, value: e.value }));
+    }
+
+    return JSON.stringify(
+      {
+        path,
+        intent,
+        changes,
+        rejected: rejected.length ? rejected : undefined,
+        next: changes.length
+          ? 'Review each change, then apply the ones you want with apply_change(changeId).'
+          : 'No valid edits — nothing to apply.',
+      },
+      null,
+      2,
+    );
   }
 
   return server;
@@ -372,4 +506,93 @@ export function createMcpServer(engine: Engine, deps: McpServerDeps = {}): Serve
 export async function startStdioMcpServer(engine: Engine): Promise<void> {
   const server = createMcpServer(engine);
   await server.connect(new StdioServerTransport());
+}
+
+interface ProposedEdit {
+  key: string;
+  value: JsonValue;
+}
+
+const PROPOSE_SYSTEM =
+  'You translate a natural-language configuration intent into concrete edits to a known ' +
+  'JSON config file. Reply with ONLY a JSON object of the form ' +
+  '{"edits":[{"key":"<dotted option key>","value":<json value>}]} — no prose, no code fences. ' +
+  'Prefer the documented option keys and types given to you; use a value that matches the ' +
+  "documented type (and one of the allowed values for an enum). Don't invent options you can't " +
+  'justify from the documentation. If the intent needs no change, return {"edits":[]}.';
+
+/** The grounding prompt: the config path, its current values, and its documented options. */
+function proposalPrompt(
+  path: string,
+  intent: string,
+  values: Record<string, unknown>,
+  schema: ConfigKindSchema | undefined,
+): string {
+  const options = (schema?.options ?? [])
+    .map((o) => {
+      const allowed = o.values ? ` one of [${o.values.join(', ')}]` : '';
+      const def = o.default !== undefined ? ` default ${JSON.stringify(o.default)}` : '';
+      return `- ${o.key} (${o.type}${allowed}${def}): ${o.description}`;
+    })
+    .join('\n');
+  return [
+    `Config file: ${path}${schema ? ` (${schema.title})` : ''}`,
+    `Current values:\n${JSON.stringify(values, null, 2)}`,
+    options
+      ? `Documented options:\n${options}`
+      : 'No documented options are available for this file.',
+    `Intent: ${intent}`,
+    'Return the JSON object of edits.',
+  ].join('\n\n');
+}
+
+/** Parse the model's reply into edits, tolerating code fences and surrounding prose. */
+function parseProposalEdits(text: string): ProposedEdit[] {
+  const stripped = text.replace(/```(?:json)?/gi, '').trim();
+  // Grab the first {...} block so stray prose doesn't break JSON.parse.
+  const start = stripped.indexOf('{');
+  const end = stripped.lastIndexOf('}');
+  if (start === -1 || end <= start) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stripped.slice(start, end + 1));
+  } catch {
+    return [];
+  }
+  const raw = (parsed as { edits?: unknown }).edits;
+  if (!Array.isArray(raw)) return [];
+  const edits: ProposedEdit[] = [];
+  for (const e of raw) {
+    const key = (e as { key?: unknown }).key;
+    const value = (e as { value?: unknown }).value;
+    if (typeof key === 'string' && key.trim() && value !== undefined) {
+      edits.push({ key: key.trim(), value: value as JsonValue });
+    }
+  }
+  return edits;
+}
+
+/** Validate a proposed edit against the documented option, when the key is documented. */
+function validateEdit(
+  edit: ProposedEdit,
+  schema: ConfigKindSchema | undefined,
+): string | undefined {
+  const doc = schema?.options.find((o) => o.key === edit.key);
+  if (!doc) return undefined; // curated schema isn't exhaustive — allow undocumented keys
+  const v = edit.value;
+  switch (doc.type) {
+    case 'boolean':
+      return typeof v === 'boolean' ? undefined : `expected a boolean for ${edit.key}`;
+    case 'number':
+      return typeof v === 'number' ? undefined : `expected a number for ${edit.key}`;
+    case 'string':
+      return typeof v === 'string' ? undefined : `expected a string for ${edit.key}`;
+    case 'enum':
+      if (typeof v !== 'string' || (doc.values && !doc.values.includes(v))) {
+        return `expected one of [${doc.values?.join(', ')}] for ${edit.key}`;
+      }
+      return undefined;
+    default:
+      return undefined; // array/object: trust the model's shape
+  }
 }
